@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import {
   getSellerDashboard,
@@ -215,13 +215,13 @@ export default function SellerDashboardPage() {
           Your seller account is approved! Set up your store to start listing products and
           connecting with buyers.
         </p>
-        <a
-          href="/create-store"
+        <Link
+          to="/store-settings"
           className="btn-primary btn-large"
           style={{ display: 'inline-block' }}
         >
           Create Store
-        </a>
+        </Link>
       </div>
     )
   }
@@ -252,7 +252,9 @@ export default function SellerDashboardPage() {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button className="btn-secondary">Manage Store</button>
+          <Link to="/store-settings" className="btn-secondary" style={{ textDecoration: 'none' }}>
+            Manage Store
+          </Link>
           <button className="btn-primary">+ Add Product</button>
         </div>
       </div>
