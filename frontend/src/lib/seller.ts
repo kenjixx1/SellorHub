@@ -114,3 +114,72 @@ export async function getSellerProducts(
 export async function getMyProductGroups(token: string): Promise<ProductGroup[]> {
   return apiFetch<ProductGroup[]>('/api/product-groups/my-store', { token })
 }
+
+export type CreateProductPayload = {
+  title: string
+  description?: string
+  price: number
+  stock?: number | null
+  status: ProductStatus
+  group_id?: number | null
+}
+
+export async function createProduct(token: string, data: CreateProductPayload): Promise<SellerProduct> {
+  return apiFetch<SellerProduct>('/api/products', {
+    method: 'POST',
+    token,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}
+
+export async function uploadProductImage(
+  token: string,
+  productId: number,
+  file: File,
+  position: number = 0
+): Promise<ProductImage> {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  return apiFetch<ProductImage>(`/api/products/${productId}/images?position=${position}`, {
+    method: 'POST',
+    token,
+    body: formData,
+  })
+}
+
+export type UpdateProductPayload = {
+  title?: string
+  description?: string | null
+  price?: number
+  stock?: number | null
+  status?: ProductStatus
+  group_id?: number | null
+}
+
+export async function updateProduct(
+  token: string,
+  productId: number,
+  data: UpdateProductPayload
+): Promise<SellerProduct> {
+  return apiFetch<SellerProduct>(`/api/products/${productId}`, {
+    method: 'PUT',
+    token,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteProduct(token: string, productId: number): Promise<void> {
+  return apiFetch<void>(`/api/products/${productId}`, {
+    method: 'DELETE',
+    token,
+  })
+}
+
+export async function getProduct(productId: number): Promise<SellerProduct> {
+  // Public endpoint
+  return apiFetch<SellerProduct>(`/api/products/${productId}`)
+}
+

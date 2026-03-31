@@ -255,7 +255,9 @@ export default function SellerDashboardPage() {
           <Link to="/store-settings" className="btn-secondary" style={{ textDecoration: 'none' }}>
             Manage Store
           </Link>
-          <button className="btn-primary">+ Add Product</button>
+          <Link to="/products/new" className="btn-primary" style={{ textDecoration: 'none' }}>
+            + Add Product
+          </Link>
         </div>
       </div>
 
@@ -371,9 +373,9 @@ export default function SellerDashboardPage() {
           }}
         >
           <SectionHeading title="Products" />
-          <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem' }}>
+          <Link to="/products" className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem', textDecoration: 'none' }}>
             Manage products
-          </button>
+          </Link>
         </div>
         {productsError ? (
           <SectionError msg={productsError} />

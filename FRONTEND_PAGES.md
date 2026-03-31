@@ -14,6 +14,10 @@ Concise inventory of **routes/screens** for the SPA. Routes live in [`frontend/s
 | `/me` | Stub | Generic account placeholder — `MePage` in [`frontend/src/main.tsx`](frontend/src/main.tsx) (buyers land here) |
 | `/seller` | Done (MVP) | [`frontend/src/pages/SellerDashboardPage.tsx`](frontend/src/pages/SellerDashboardPage.tsx) — requires `role === seller`; shows store header, overview stats, recent inquiries, product preview, product groups; handles unapproved and no-store states |
 | `/admin` | Done (MVP) | [`frontend/src/pages/AdminPage.tsx`](frontend/src/pages/AdminPage.tsx) — requires `role === admin`; shows platform stats, users list, pending seller approvals |
+| `/store-settings` | Done | [`frontend/src/pages/StoreSettingsPage.tsx`](frontend/src/pages/StoreSettingsPage.tsx) — handles both creating a new store and editing an existing store |
+| `/products` | Done | [`frontend/src/pages/ManageProductsPage.tsx`](frontend/src/pages/ManageProductsPage.tsx) — lists all products with edit/delete actions |
+| `/products/new` | Done | [`frontend/src/pages/CreateProductPage.tsx`](frontend/src/pages/CreateProductPage.tsx) — creates a product and uploads an image by URL or file |
+| `/products/:id/edit` | Done | [`frontend/src/pages/EditProductPage.tsx`](frontend/src/pages/EditProductPage.tsx) — edits specific product details |
 
 ---
 
@@ -36,10 +40,8 @@ Pages implied by MVP scope not yet built in the UI.
 
 ### Seller (authenticated) — future iterations
 
-- Full product CRUD page (list, create, edit, image upload).
 - Product groups management page.
 - Seller inquiry inbox (full list + reply/status update).
-- Store setup / edit page.
 
 ### Admin (authenticated, `role === admin`) — future iterations
 

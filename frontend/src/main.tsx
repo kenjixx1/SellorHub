@@ -7,6 +7,9 @@ import RegisterPage from './pages/RegisterPage'
 import AdminPage from './pages/AdminPage'
 import SellerDashboardPage from './pages/SellerDashboardPage'
 import StoreSettingsPage from './pages/StoreSettingsPage'
+import CreateProductPage from './pages/CreateProductPage'
+import ManageProductsPage from './pages/ManageProductsPage'
+import EditProductPage from './pages/EditProductPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 
 createRoot(document.getElementById('root')!).render(
@@ -117,6 +120,9 @@ function AppShell() {
           <Route path="/me" element={<MePage />} />
           <Route path="/seller" element={<SellerDashboardPage />} />
           <Route path="/store-settings" element={<StoreSettingsPage />} />
+          <Route path="/products" element={<ManageProductsPage />} />
+          <Route path="/products/new" element={<CreateProductPage />} />
+          <Route path="/products/:id/edit" element={<EditProductPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>
