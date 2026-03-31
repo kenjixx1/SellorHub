@@ -23,7 +23,8 @@ export default function LoginPage() {
       const res = await login(email, password)
       setToken(res.access_token)
       await refreshMe(res.access_token)
-      nav('/me')
+      const destination = res.user.role === 'admin' ? '/admin' : '/me'
+      nav(destination)
     } catch (err: any) {
       setError(err?.message ?? 'Login failed')
     } finally {

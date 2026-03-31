@@ -4,6 +4,7 @@ import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import './index.css'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import AdminPage from './pages/AdminPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 
 createRoot(document.getElementById('root')!).render(
@@ -27,7 +28,12 @@ function HomePage() {
         </p>
         <div className="hero-actions">
           {user ? (
-            <Link to="/me" className="btn-primary btn-large">Go to Dashboard</Link>
+            <Link
+              to={user.role === 'admin' ? '/admin' : '/me'}
+              className="btn-primary btn-large"
+            >
+              {user.role === 'admin' ? 'Admin Dashboard' : 'Go to Dashboard'}
+            </Link>
           ) : (
             <>
               <Link to="/register" className="btn-primary btn-large">Start Selling Now</Link>
@@ -80,7 +86,12 @@ function AppShell() {
         <nav className="nav-links">
           {user ? (
             <>
-              <Link to="/me" className="nav-link">Dashboard</Link>
+              <Link
+                to={user.role === 'admin' ? '/admin' : '/me'}
+                className="nav-link"
+              >
+                {user.role === 'admin' ? 'Admin' : 'Dashboard'}
+              </Link>
               <LogoutButton />
               <div className="user-badge">
                 <span className="user-avatar">{user.username.charAt(0).toUpperCase()}</span>
@@ -102,6 +113,7 @@ function AppShell() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/me" element={<MePage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>
     </>

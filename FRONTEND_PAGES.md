@@ -9,15 +9,16 @@ Concise inventory of **routes/screens** for the SPA. Routes live in [`frontend/s
 | Route | Status | Where / notes |
 | ----- | ------ | ------------- |
 | `/` | Done | Landing / hero — `HomePage` in [`frontend/src/main.tsx`](frontend/src/main.tsx) |
-| `/login` | Done | [`frontend/src/pages/LoginPage.tsx`](frontend/src/pages/LoginPage.tsx) |
+| `/login` | Done | [`frontend/src/pages/LoginPage.tsx`](frontend/src/pages/LoginPage.tsx) — redirects to `/admin` if `role === admin`, else `/me` |
 | `/register` | Done | [`frontend/src/pages/RegisterPage.tsx`](frontend/src/pages/RegisterPage.tsx) |
-| `/me` | Stub | “Dashboard” placeholder + raw user JSON — `MePage` in [`frontend/src/main.tsx`](frontend/src/main.tsx) (not under `pages/` yet) |
+| `/me` | Stub | "Dashboard" placeholder + raw user JSON — `MePage` in [`frontend/src/main.tsx`](frontend/src/main.tsx) (not under `pages/` yet) |
+| `/admin` | Done (MVP) | [`frontend/src/pages/AdminPage.tsx`](frontend/src/pages/AdminPage.tsx) — requires `role === admin`; shows platform stats, users list, pending seller approvals |
 
 ---
 
 ## Planned (MVP)
 
-Pages implied by MVP scope (stores, catalog, inquiries, seller tools, admin). Not built in the UI yet unless noted above.
+Pages implied by MVP scope (stores, catalog, inquiries, seller tools). Not built in the UI yet unless noted above.
 
 ### Public / discovery
 
@@ -40,12 +41,12 @@ Pages implied by MVP scope (stores, catalog, inquiries, seller tools, admin). No
 - Product groups / categories management.
 - Seller inquiry inbox — list, update status.
 
-### Admin (authenticated, `role === admin`)
+### Admin (authenticated, `role === admin`) — future iterations
 
-- Admin home — platform stats.
-- Users — list / moderation.
-- Store approvals queue.
-- Content or listing moderation (per API).
+- Store management / browse.
+- Product moderation (hide/unhide).
+- User detail page and delete flow.
+- Fine-grained admin navigation/sidebar.
 
 ---
 
