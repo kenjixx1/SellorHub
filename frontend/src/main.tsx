@@ -5,6 +5,7 @@ import './index.css'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import AdminPage from './pages/AdminPage'
+import SellerDashboardPage from './pages/SellerDashboardPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 
 createRoot(document.getElementById('root')!).render(
@@ -29,10 +30,10 @@ function HomePage() {
         <div className="hero-actions">
           {user ? (
             <Link
-              to={user.role === 'admin' ? '/admin' : '/me'}
+              to={user.role === 'admin' ? '/admin' : user.role === 'seller' ? '/seller' : '/me'}
               className="btn-primary btn-large"
             >
-              {user.role === 'admin' ? 'Admin Dashboard' : 'Go to Dashboard'}
+              {user.role === 'admin' ? 'Admin Dashboard' : user.role === 'seller' ? 'Seller Dashboard' : 'Go to Dashboard'}
             </Link>
           ) : (
             <>
@@ -87,10 +88,10 @@ function AppShell() {
           {user ? (
             <>
               <Link
-                to={user.role === 'admin' ? '/admin' : '/me'}
+                to={user.role === 'admin' ? '/admin' : user.role === 'seller' ? '/seller' : '/me'}
                 className="nav-link"
               >
-                {user.role === 'admin' ? 'Admin' : 'Dashboard'}
+                {user.role === 'admin' ? 'Admin' : user.role === 'seller' ? 'My Store' : 'Dashboard'}
               </Link>
               <LogoutButton />
               <div className="user-badge">
@@ -113,6 +114,7 @@ function AppShell() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/me" element={<MePage />} />
+          <Route path="/seller" element={<SellerDashboardPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>

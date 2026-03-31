@@ -9,16 +9,17 @@ Concise inventory of **routes/screens** for the SPA. Routes live in [`frontend/s
 | Route | Status | Where / notes |
 | ----- | ------ | ------------- |
 | `/` | Done | Landing / hero — `HomePage` in [`frontend/src/main.tsx`](frontend/src/main.tsx) |
-| `/login` | Done | [`frontend/src/pages/LoginPage.tsx`](frontend/src/pages/LoginPage.tsx) — redirects to `/admin` if `role === admin`, else `/me` |
+| `/login` | Done | [`frontend/src/pages/LoginPage.tsx`](frontend/src/pages/LoginPage.tsx) — routes to `/admin`, `/seller`, or `/me` by role |
 | `/register` | Done | [`frontend/src/pages/RegisterPage.tsx`](frontend/src/pages/RegisterPage.tsx) |
-| `/me` | Stub | "Dashboard" placeholder + raw user JSON — `MePage` in [`frontend/src/main.tsx`](frontend/src/main.tsx) (not under `pages/` yet) |
+| `/me` | Stub | Generic account placeholder — `MePage` in [`frontend/src/main.tsx`](frontend/src/main.tsx) (buyers land here) |
+| `/seller` | Done (MVP) | [`frontend/src/pages/SellerDashboardPage.tsx`](frontend/src/pages/SellerDashboardPage.tsx) — requires `role === seller`; shows store header, overview stats, recent inquiries, product preview, product groups; handles unapproved and no-store states |
 | `/admin` | Done (MVP) | [`frontend/src/pages/AdminPage.tsx`](frontend/src/pages/AdminPage.tsx) — requires `role === admin`; shows platform stats, users list, pending seller approvals |
 
 ---
 
 ## Planned (MVP)
 
-Pages implied by MVP scope (stores, catalog, inquiries, seller tools). Not built in the UI yet unless noted above.
+Pages implied by MVP scope not yet built in the UI.
 
 ### Public / discovery
 
@@ -30,16 +31,15 @@ Pages implied by MVP scope (stores, catalog, inquiries, seller tools). Not built
 
 ### Buyer (authenticated)
 
-- Account / profile (may replace or refine `/me`).
+- Account / profile (improve `/me` from current stub).
 - My inquiries — list and detail.
 
-### Seller (authenticated)
+### Seller (authenticated) — future iterations
 
-- Seller dashboard (overview; may evolve from `/me` when `role` is seller).
-- Store setup / edit (name, slug, description; show approval state if applicable).
-- Product CRUD — list, create, edit + image upload UX.
-- Product groups / categories management.
-- Seller inquiry inbox — list, update status.
+- Full product CRUD page (list, create, edit, image upload).
+- Product groups management page.
+- Seller inquiry inbox (full list + reply/status update).
+- Store setup / edit page.
 
 ### Admin (authenticated, `role === admin`) — future iterations
 
@@ -52,4 +52,4 @@ Pages implied by MVP scope (stores, catalog, inquiries, seller tools). Not built
 
 ## Post-MVP (later)
 
-Orders, checkout, shipments, and related buyer/seller flows (backend may have placeholders; not MVP UI targets for this list).
+Orders, checkout, shipments, revenue graphs, and related buyer/seller flows (backend has model scaffolding; not MVP UI targets for this list).
