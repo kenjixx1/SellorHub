@@ -1,29 +1,26 @@
-"""
-Database connection and session management.
-"""
+from typing import Generator
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from typing import Generator
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 
+
+
 engine = create_engine(
     settings.DATABASE_URL,
+    connect_args={"check_same_thread": False},
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 Base = declarative_base()
 
 
 def get_db() -> Generator[Session, None, None]:
     """
-    Dependency function to get database session.
-    Yields a database session and closes it after use.
+    FastAPI dependency: yield a DB session and close it when the request ends.
     """
     db = SessionLocal()
     try:
