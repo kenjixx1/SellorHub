@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/sellor"
+    # in app/config.py
+    DATABASE_URL: str = "sqlite:///./sellor.db" 
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
