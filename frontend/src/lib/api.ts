@@ -36,13 +36,41 @@ export async function apiFetch<T>(
   const body = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null)
 
   if (!res.ok) {
-    const msg =
-      (isJson && body && typeof body === 'object' && 'detail' in (body as any) && (body as any).detail) ||
-      res.statusText ||
-      'Request failed'
-    throw new ApiError(String(msg), res.status, body)
+    const msg = formatErrorMessage(isJson, body, res.statusText)
+    throw new ApiError(msg, res.status, body)
   }
 
   return body as T
+}
+
+/** Turn FastAPI `detail` (string | object | array) into a readable message. */
+function formatErrorMessage(isJson: boolean, body: unknown, statusText: string): string {
+  if (!isJson || !body || typeof body !== 'object') {
+    return statusText || 'Request failed'
+  }
+  const detail = (body as { detail?: unknown }).detail
+  if (detail == null) return statusText || 'Request failed'
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    const parts = detail.map((item) => {
+      if (item && typeof item === 'object' && 'msg' in item) {
+        const loc = Array.isArray((item as { loc?: unknown }).loc)
+          ? (item as { loc: (string | number)[] }).loc.join('.')
+          : ''
+        const msg = String((item as { msg: string }).msg)
+        return loc ? `${loc}: ${msg}` : msg
+      }
+      return String(item)
+    })
+    return parts.join('; ') || statusText || 'Request failed'
+  }
+  if (typeof detail === 'object') {
+    try {
+      return JSON.stringify(detail)
+    } catch {
+      return statusText || 'Request failed'
+    }
+  }
+  return String(detail)
 }
 

@@ -7,7 +7,7 @@ type AuthState = {
   user: User | null
   loading: boolean
   setToken: (token: string | null) => void
-  refreshMe: () => Promise<void>
+  refreshMe: (overrideToken?: string) => Promise<void>
   logout: () => void
 }
 
@@ -31,13 +31,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
   }
 
-  const refreshMe = async () => {
-    if (!token) {
+  const refreshMe = async (overrideToken?: string) => {
+    const activeToken = overrideToken || token
+    if (!activeToken) {
       setUser(null)
       return
     }
     try {
-      const u = await me(token)
+      const u = await me(activeToken)
       setUser(u)
     } catch {
       // token invalid/expired or server mismatch

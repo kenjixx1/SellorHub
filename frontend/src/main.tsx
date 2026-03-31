@@ -16,20 +16,56 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-function MePage() {
-  const { user, loading, logout } = useAuth()
-  if (loading) return <div style={{ padding: 16 }}>Loading…</div>
-  if (!user) return <div style={{ padding: 16 }}>Not logged in.</div>
+function HomePage() {
+  const { user } = useAuth();
   return (
-    <div style={{ maxWidth: 720, margin: '32px auto', padding: 16 }}>
-      <h1>Me</h1>
-      <pre style={{ padding: 12, background: 'rgba(0,0,0,0.06)', overflowX: 'auto' }}>
+    <div className="hero">
+      <div className="hero-content">
+        <h1>Transform Your Sales Journey with <span>SellorHub</span></h1>
+        <p>
+          The ultimate platform to manage, showcase, and skyrocket your sales. Join thousands of top sellers today.
+        </p>
+        <div className="hero-actions">
+          {user ? (
+            <Link to="/me" className="btn-primary btn-large">Go to Dashboard</Link>
+          ) : (
+            <>
+              <Link to="/register" className="btn-primary btn-large">Start Selling Now</Link>
+              <Link to="/login" className="btn-secondary btn-large">Log In</Link>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="hero-graphics">
+        <div className="glass-card float-1">📦 Manage Inventory</div>
+        <div className="glass-card float-2">📈 Track Sales</div>
+        <div className="glass-card float-3">🤝 Connect with Buyers</div>
+      </div>
+    </div>
+  )
+}
+
+function MePage() {
+  const { user, loading } = useAuth()
+  if (loading) return <div className="page-container">Loading…</div>
+  if (!user) return <div className="page-container">Not logged in.</div>
+  return (
+    <div className="page-container">
+      <h1>Dashboard</h1>
+      <div style={{ padding: '0.5rem 0', color: 'var(--text-muted)' }}>Welcome back, {user.username}!</div>
+      <pre style={{ padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '0.5rem', overflowX: 'auto', border: '1px solid var(--border)' }}>
         {JSON.stringify(user, null, 2)}
       </pre>
-      <button onClick={logout} style={{ padding: 10, fontWeight: 600 }}>
-        Logout
-      </button>
     </div>
+  )
+}
+
+function LogoutButton() {
+  const { logout } = useAuth()
+  return (
+    <button onClick={logout} className="btn-logout">
+      Logout
+    </button>
   )
 }
 
@@ -37,32 +73,37 @@ function AppShell() {
   const { user } = useAuth()
   return (
     <>
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: 12,
-          padding: 12,
-          borderBottom: '1px solid rgba(0,0,0,0.1)',
-        }}
-      >
-        <Link to="/" style={{ fontWeight: 700, textDecoration: 'none' }}>
+      <header className="navbar">
+        <Link to="/" className="logo">
           SellorHub
         </Link>
-        <nav style={{ display: 'flex', gap: 12 }}>
-          <Link to="/login">Login</Link>
-          <Link to="/register"> Register </Link>
-          <Link to="/me">Me</Link>
-          <span style={{ opacity: 0.7 }}>{user ? `Signed in as ${user.username}` : 'Guest'}</span>
+        <nav className="nav-links">
+          {user ? (
+            <>
+              <Link to="/me" className="nav-link">Dashboard</Link>
+              <LogoutButton />
+              <div className="user-badge">
+                <span className="user-avatar">{user.username.charAt(0).toUpperCase()}</span>
+                {user.username}
+              </div>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="nav-link">Log In</Link>
+              <Link to="/register" className="btn-primary">Get Started</Link>
+            </>
+          )}
         </nav>
       </header>
 
-      <Routes>
-        <Route path="/" element={<div style={{ padding: 16 }}>Home (placeholder)</div>} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/me" element={<MePage />} />
-      </Routes>
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/me" element={<MePage />} />
+        </Routes>
+      </main>
     </>
   )
 }

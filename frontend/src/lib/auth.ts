@@ -27,11 +27,32 @@ export async function login(email: string, password: string) {
   })
 }
 
-export async function register(username: string, email: string, password: string, role: string, phone_number: string) {
+/**
+ * Register a new account. Matches backend `UserCreate`:
+ * - `phone_number` is optional — omit entirely when blank (empty string breaks DB UNIQUE).
+ */
+export async function register(
+  username: string,
+  email: string,
+  password: string,
+  role: UserRole,
+  phone_number: string,
+) {
+  const payload: Record<string, string | UserRole> = {
+    username,
+    email,
+    password,
+    role,
+  }
+  const phone = phone_number?.trim()
+  if (phone) {
+    payload.phone_number = phone
+  }
+
   return await apiFetch<User>('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password, role, phone_number }),
+    body: JSON.stringify(payload),
   })
 }
 

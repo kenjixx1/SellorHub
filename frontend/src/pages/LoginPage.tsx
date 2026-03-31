@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../lib/auth'
 import { useAuth } from '../auth/AuthContext'
 
@@ -12,6 +12,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,7 +22,7 @@ export default function LoginPage() {
     try {
       const res = await login(email, password)
       setToken(res.access_token)
-      await refreshMe()
+      await refreshMe(res.access_token)
       nav('/me')
     } catch (err: any) {
       setError(err?.message ?? 'Login failed')
@@ -31,50 +32,77 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: '48px auto', padding: 16 }}>
-      <h1 style={{ marginBottom: 20 }}>Sellor</h1>
+    <div className="page-container" style={{ maxWidth: 480 }}>
+      <h1 style={{ textAlign: 'center' }}>Welcome Back</h1>
+      <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>
+        Log in to continue to SellorHub
+      </p>
 
       {error && (
         <div
           style={{
-            color: 'crimson',
-            background: 'rgba(220,20,60,0.08)',
-            padding: 10,
-            borderRadius: 8,
-            marginBottom: 12,
+            color: '#fca5a5',
+            background: 'rgba(239, 68, 68, 0.1)',
+            padding: '0.75rem',
+            borderRadius: '0.5rem',
+            marginBottom: '1.5rem',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
           }}
         >
           {error}
         </div>
       )}
 
-      <form onSubmit={onLogin} style={{ display: 'grid', gap: 12 }}>
-        <label style={{ display: 'grid', gap: 4 }}>
-          <span>Email</span>
+      <form onSubmit={onLogin}>
+        <div className="form-group">
+          <label className="form-label">Email</label>
           <input
+            className="form-input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             type="email"
             required
-            style={{ padding: 10 }}
+            placeholder="you@example.com"
           />
-        </label>
+        </div>
 
-        <label style={{ display: 'grid', gap: 4 }}>
-          <span>Password</span>
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            required
-            style={{ padding: 10 }}
-          />
-        </label>
+        <div className="form-group">
+          <label className="form-label">Password</label>
+          <div className="password-input-wrapper">
+            <input
+              className="form-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type={showPassword ? 'text' : 'password'}
+              required
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </div>
 
-        <button type="submit" disabled={submitting} style={{ padding: 10, fontWeight: 600 }}>
+        <button
+          type="submit"
+          className="btn-primary btn-large"
+          disabled={submitting}
+          style={{ width: '100%', marginTop: '1rem' }}
+        >
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
+
+      <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.875rem' }}>
+        Don't have an account?{' '}
+        <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+          Sign up
+        </Link>
+      </p>
     </div>
   )
 }
