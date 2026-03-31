@@ -2,8 +2,11 @@
 Application configuration settings.
 Loads environment variables and provides configuration for the FastAPI app.
 """
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from typing import Optional
+
+_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
 
 class Settings(BaseSettings):
@@ -57,7 +60,8 @@ class Settings(BaseSettings):
     MAX_PAGE_SIZE: int = 100
     
     class Config:
-        env_file = ".env"
+        # Load backend/.env reliably regardless of current working directory.
+        env_file = str(_ENV_PATH)
         case_sensitive = True
 
 

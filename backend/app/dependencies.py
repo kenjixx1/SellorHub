@@ -50,8 +50,17 @@ def get_current_user(
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    user = db.query(User).filter(User.id == user_id).first()
+    # jose may return `sub` as a string. Convert safely for DB lookup.
+    try:
+        user_id_int = int(user_id)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db.query(User).filter(User.id == user_id_int).first()
     
     if user is None:
         raise HTTPException(

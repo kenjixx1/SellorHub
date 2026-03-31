@@ -67,19 +67,6 @@ class AuthService:
         return db_user
     
     def login_user(self, login_data: UserLogin) -> Token:
-        """
-        Authenticate user and generate access token.
-        
-        Args:
-            login_data: User login credentials
-            
-        Returns:
-            Token object with access token and user info
-            
-        Raises:
-            HTTPException: If credentials are invalid
-        """
-        # Find user by email
         user = self.db.query(User).filter(User.email == login_data.email).first()
         
         if not user:
@@ -88,7 +75,6 @@ class AuthService:
                 detail="Incorrect email or password"
             )
         
-        # Verify password
         if not verify_password(login_data.password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -98,7 +84,8 @@ class AuthService:
         # Create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.id},
+            # jose expects `sub` to be a string (not an int)
+            data={"sub": str(user.id)},
             expires_delta=access_token_expires
         )
         
