@@ -18,6 +18,12 @@ Concise inventory of **routes/screens** for the SPA. Routes live in [`frontend/s
 | `/products` | Done | [`frontend/src/pages/ManageProductsPage.tsx`](frontend/src/pages/ManageProductsPage.tsx) — lists all products with edit/delete actions |
 | `/products/new` | Done | [`frontend/src/pages/CreateProductPage.tsx`](frontend/src/pages/CreateProductPage.tsx) — creates a product and uploads an image by URL or file |
 | `/products/:id/edit` | Done | [`frontend/src/pages/EditProductPage.tsx`](frontend/src/pages/EditProductPage.tsx) — edits specific product details |
+| `/explore` | Done | [`frontend/src/pages/ExplorePage.tsx`](frontend/src/pages/ExplorePage.tsx) — Public marketplace grid (Mercari-style) with global search. |
+| `/products/:id` | Done | [`frontend/src/pages/ProductDetailPage.tsx`](frontend/src/pages/ProductDetailPage.tsx) — Product details, gallery, and inquiry form. |
+| `/profile` | Done | [`frontend/src/pages/ProfilePage.tsx`](frontend/src/pages/ProfilePage.tsx) — Edit user profile information. |
+
+
+
 
 ---
 
@@ -35,7 +41,6 @@ Pages implied by MVP scope not yet built in the UI.
 
 ### Buyer (authenticated)
 
-- Account / profile (improve `/me` from current stub).
 - My inquiries — list and detail.
 
 ### Seller (authenticated) — future iterations

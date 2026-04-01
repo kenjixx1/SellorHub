@@ -12,6 +12,7 @@ import ManageProductsPage from './pages/ManageProductsPage'
 import EditProductPage from './pages/EditProductPage'
 import ExplorePage from './pages/ExplorePage'
 import ProductDetailPage from './pages/ProductDetailPage'
+import ProfilePage from './pages/ProfilePage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 
 // Global search context
@@ -59,12 +60,14 @@ function HomePage() {
         </p>
         <div className="hero-actions">
           {user ? (
-            <Link
-              to={user.role === 'admin' ? '/admin' : user.role === 'seller' ? '/seller' : '/me'}
-              className="btn-primary btn-large"
-            >
-              {user.role === 'admin' ? 'Admin Dashboard' : user.role === 'seller' ? 'Seller Dashboard' : 'Go to Dashboard'}
-            </Link>
+            user.role !== 'buyer' && (
+              <Link
+                to={user.role === 'admin' ? '/admin' : '/seller'}
+                className="btn-primary btn-large"
+              >
+                {user.role === 'admin' ? 'Admin Dashboard' : 'Seller Dashboard'}
+              </Link>
+            )
           ) : (
             <>
               <Link to="/explore" className="btn-primary btn-large">Explore Marketplace</Link>
@@ -97,12 +100,65 @@ function MePage() {
   )
 }
 
-function LogoutButton() {
-  const { logout } = useAuth()
+function ProfileDropdown() {
+  const { user, logout } = useAuth()
+  const [isOpen, setIsOpen] = useState(false)
+  const navigate = useNavigate()
+
+  if (!user) return null
+
   return (
-    <button onClick={logout} className="btn-logout">
-      Logout
-    </button>
+    <div className="profile-dropdown-container">
+      <div className="user-avatar" onClick={() => setIsOpen(!isOpen)}>
+        {user.username.charAt(0).toUpperCase()}
+      </div>
+      
+      {isOpen && (
+        <>
+          <div 
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} 
+            onClick={() => setIsOpen(false)} 
+          />
+          <div className="profile-dropdown">
+            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{user.username}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user.email}</div>
+            </div>
+            
+            <button 
+              className="dropdown-item" 
+              onClick={() => { navigate('/profile'); setIsOpen(false); }}
+            >
+              <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              My Profile
+            </button>
+
+            {user.role !== 'buyer' && (
+              <button 
+                className="dropdown-item" 
+                onClick={() => { navigate(user.role === 'admin' ? '/admin' : '/seller'); setIsOpen(false); }}
+              >
+                <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                {user.role === 'admin' ? 'Admin' : 'My Store'}
+              </button>
+            )}
+
+            <div className="dropdown-divider" />
+            
+            <button className="dropdown-item logout" onClick={logout}>
+              <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -179,21 +235,9 @@ function AppShell() {
           <GlobalSearchBar />
         </div>
 
-        <nav className="nav-links" style={{ flexShrink: 0, marginLeft: '1.5rem' }}>
+        <nav className="nav-links" style={{ flexShrink: 0, marginLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           {user ? (
-            <>
-              <Link
-                to={user.role === 'admin' ? '/admin' : user.role === 'seller' ? '/seller' : '/me'}
-                className="nav-link"
-              >
-                {user.role === 'admin' ? 'Admin' : user.role === 'seller' ? 'My Store' : 'Dashboard'}
-              </Link>
-              <LogoutButton />
-              <div className="user-badge" style={{ display: 'none' /* mobile? */ }}>
-                <span className="user-avatar">{user.username.charAt(0).toUpperCase()}</span>
-                {user.username}
-              </div>
-            </>
+            <ProfileDropdown />
           ) : (
             <>
               <Link to="/login" className="nav-link">Log In</Link>
@@ -217,6 +261,7 @@ function AppShell() {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>
     </>
