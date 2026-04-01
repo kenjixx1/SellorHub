@@ -1,6 +1,6 @@
-import { StrictMode } from 'react'
+import { StrictMode, createContext, useContext, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Route, Routes, useNavigate, useLocation } from 'react-router-dom'
 import './index.css'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -10,17 +10,43 @@ import StoreSettingsPage from './pages/StoreSettingsPage'
 import CreateProductPage from './pages/CreateProductPage'
 import ManageProductsPage from './pages/ManageProductsPage'
 import EditProductPage from './pages/EditProductPage'
+import ExplorePage from './pages/ExplorePage'
+import ProductDetailPage from './pages/ProductDetailPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
+
+// Global search context
+type SearchContextType = {
+  searchQuery: string
+  setSearchQuery: (q: string) => void
+}
+const SearchContext = createContext<SearchContextType | undefined>(undefined)
+
+export function useSearch() {
+  const context = useContext(SearchContext)
+  if (!context) throw new Error('useSearch must be used within SearchProvider')
+  return context
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <BrowserRouter>
-        <AppShell />
-      </BrowserRouter>
+      <SearchProvider>
+        <BrowserRouter>
+          <AppShell />
+        </BrowserRouter>
+      </SearchProvider>
     </AuthProvider>
   </StrictMode>,
 )
+
+function SearchProvider({ children }: { children: React.ReactNode }) {
+  const [searchQuery, setSearchQuery] = useState('')
+  return (
+    <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+      {children}
+    </SearchContext.Provider>
+  )
+}
 
 function HomePage() {
   const { user } = useAuth();
@@ -41,8 +67,8 @@ function HomePage() {
             </Link>
           ) : (
             <>
-              <Link to="/register" className="btn-primary btn-large">Start Selling Now</Link>
-              <Link to="/login" className="btn-secondary btn-large">Log In</Link>
+              <Link to="/explore" className="btn-primary btn-large">Explore Marketplace</Link>
+              <Link to="/register" className="btn-secondary btn-large">Start Selling Now</Link>
             </>
           )}
         </div>
@@ -80,15 +106,80 @@ function LogoutButton() {
   )
 }
 
+function GlobalSearchBar() {
+  const { searchQuery, setSearchQuery } = useSearch()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+    if (location.pathname !== '/explore' && e.target.value.trim() !== '') {
+      navigate('/explore')
+    }
+  }
+
+  return (
+    <div className="nav-search-container" style={{ flex: 1, maxWidth: '600px' }}>
+      <div style={{ position: 'relative' }}>
+        <input
+          type="text"
+          className="form-input"
+          placeholder="Search products..."
+          style={{
+            width: '100%',
+            borderRadius: '99px',
+            padding: '0.5rem 1rem 0.5rem 2.5rem',
+            background: 'rgba(0,0,0,0.3)',
+            height: '40px',
+            border: '1px solid var(--border)'
+          }}
+          value={searchQuery}
+          onChange={handleSearch}
+        />
+        <svg
+          style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', width: '1rem', height: '1rem', color: 'var(--text-muted)' }}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
 function AppShell() {
   const { user } = useAuth()
   return (
     <>
       <header className="navbar">
-        <Link to="/" className="logo">
-          SellorHub
-        </Link>
-        <nav className="nav-links">
+        <div className="navbar-left" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1 }}>
+          <Link to="/" className="logo" style={{ flexShrink: 0 }}>
+            SellorHub
+          </Link>
+
+          <Link
+            to="/explore"
+            className="nav-link"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              color: 'var(--text)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+            Explore
+          </Link>
+
+          <GlobalSearchBar />
+        </div>
+
+        <nav className="nav-links" style={{ flexShrink: 0, marginLeft: '1.5rem' }}>
           {user ? (
             <>
               <Link
@@ -98,7 +189,7 @@ function AppShell() {
                 {user.role === 'admin' ? 'Admin' : user.role === 'seller' ? 'My Store' : 'Dashboard'}
               </Link>
               <LogoutButton />
-              <div className="user-badge">
+              <div className="user-badge" style={{ display: 'none' /* mobile? */ }}>
                 <span className="user-avatar">{user.username.charAt(0).toUpperCase()}</span>
                 {user.username}
               </div>
@@ -124,6 +215,8 @@ function AppShell() {
           <Route path="/products/new" element={<CreateProductPage />} />
           <Route path="/products/:id/edit" element={<EditProductPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/explore" element={<ExplorePage />} />
+          <Route path="/products/:id" element={<ProductDetailPage />} />
         </Routes>
       </main>
     </>
