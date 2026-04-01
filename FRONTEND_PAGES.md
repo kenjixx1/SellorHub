@@ -33,7 +33,7 @@ Existing pages that need changes to support newly implemented backend features.
 
 | Route | File | What needs updating |
 | ----- | ---- | ------------------- |
-| `/products/new` | [`frontend/src/pages/CreateProductPage.tsx`](frontend/src/pages/CreateProductPage.tsx) | Support uploading up to 5 images after product creation (`POST /api/products/{id}/images`, position 0–4); replace single-image input with a multi-file uploader |
+| `/products/new` | [`frontend/src/pages/CreateProductPage.tsx`](frontend/src/pages/CreateProductPage.tsx) | ✅ **Done** — Slideshow/Carousel style multi-image uploader (up to 5 images, positions 0–4); single image view with navigation; file and URL uploads supported; images uploaded sequentially via `POST /api/products/{id}/images`; position 0 = cover thumbnail |
 | `/products/:id/edit` | [`frontend/src/pages/EditProductPage.tsx`](frontend/src/pages/EditProductPage.tsx) | Add image management panel: view all current images, upload additional images, delete individual images (`DELETE /api/products/{id}/images/{imgId}`), drag-to-reorder (`PUT /api/products/{id}/images/reorder`) |
 | `/products/:id` | [`frontend/src/pages/ProductDetailPage.tsx`](frontend/src/pages/ProductDetailPage.tsx) | Upgrade to full image gallery: thumbnail strip + main viewer using all images from `GET /api/products/{id}`; also add "Add to Cart" button (`POST /api/cart/items`) |
 | `/store/:slug` | [`frontend/src/pages/PublicStorePage.tsx`](frontend/src/pages/PublicStorePage.tsx) | Add ratings summary (star average + review count) in store header via `GET /api/ratings/store/{store_id}`; add paginated reviews/comments section at the bottom of the page |
