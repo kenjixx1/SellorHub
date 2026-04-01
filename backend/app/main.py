@@ -9,7 +9,8 @@ from pathlib import Path
 
 from app.config import settings
 from app.database import engine, Base
-from app.routers import auth, stores, products, product_groups, inquiries, admin
+from app.routers import auth, stores, products, product_groups, inquiries, admin, users, cart, orders, addresses, ratings
+import app.models  # ensure all models are registered before create_all
 
 # ─── Create Tables (use Alembic in production) ────────────────────────────────
 # Remove this line once Alembic migrations are set up
@@ -61,6 +62,11 @@ app.include_router(products.router)
 app.include_router(product_groups.router)
 app.include_router(inquiries.router)
 app.include_router(admin.router)
+app.include_router(users.router)
+app.include_router(cart.router)
+app.include_router(orders.router)
+app.include_router(addresses.router)
+app.include_router(ratings.router)
 
 
 # ─── Health Check ─────────────────────────────────────────────────────────────

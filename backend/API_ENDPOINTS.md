@@ -526,6 +526,149 @@ Authorization: Bearer <access_token>
 | `price_desc` | Highest price first |
 | `alphabetical` | A–Z by product title |
 
+### Order Status
+| Value | Description |
+|-------|-------------|
+| `placed` | Order created, awaiting payment |
+| `paid` | Payment confirmed |
+| `packing` | Seller is preparing the order |
+| `shipped` | Order shipped |
+| `delivered` | Order delivered to buyer |
+| `cancelled` | Order cancelled |
+| `refunded` | Payment refunded |
+
+---
+
+## 7. User Profile
+
+**Prefix:** `/api/users`
+
+| Method | Endpoint | Auth | Status | Description |
+|--------|----------|------|--------|-------------|
+| `PUT` | `/api/users/me` | 👤 | `200` | Update profile (username, email, phone, avatar URL) |
+| `POST` | `/api/users/me/avatar` | 👤 | `200` | Upload avatar image (multipart file) |
+
+---
+
+## 8. Shopping Cart
+
+**Prefix:** `/api/cart`
+
+| Method | Endpoint | Auth | Status | Description |
+|--------|----------|------|--------|-------------|
+| `GET` | `/api/cart` | 👤 | `200` | Get current cart with items, quantities, and totals |
+| `POST` | `/api/cart/items` | 👤 | `201` | Add product to cart (or increase quantity if exists) |
+| `PUT` | `/api/cart/items/{item_id}` | 👤 | `200` | Update quantity for a cart item |
+| `DELETE` | `/api/cart/items/{item_id}` | 👤 | `200` | Remove a specific item from the cart |
+| `DELETE` | `/api/cart` | 👤 | `200` | Clear all items from the cart |
+
+### POST `/api/cart/items` — Request Body
+```json
+{
+  "product_id": 5,
+  "quantity": 2
+}
+```
+
+---
+
+## 9. Addresses
+
+**Prefix:** `/api/addresses`
+
+| Method | Endpoint | Auth | Status | Description |
+|--------|----------|------|--------|-------------|
+| `GET` | `/api/addresses` | 👤 | `200` | List all my shipping addresses |
+| `GET` | `/api/addresses/{id}` | 👤 | `200` | Get a single address |
+| `POST` | `/api/addresses` | 👤 | `201` | Create a new shipping address |
+| `PUT` | `/api/addresses/{id}` | 👤 | `200` | Update a shipping address |
+| `DELETE` | `/api/addresses/{id}` | 👤 | `204` | Delete a shipping address |
+
+### POST `/api/addresses` — Request Body
+```json
+{
+  "label": "Home",
+  "recipient_name": "Kenji Tanaka",
+  "phone": "+66812345678",
+  "address_line1": "123 Sukhumvit Rd",
+  "address_line2": "Unit 4B",
+  "city": "Bangkok",
+  "province": "Bangkok",
+  "postal_code": "10110",
+  "country": "Thailand",
+  "is_default": true
+}
+```
+
+---
+
+## 10. Orders & Checkout
+
+**Prefix:** `/api/orders`
+
+| Method | Endpoint | Auth | Status | Description |
+|--------|----------|------|--------|-------------|
+| `POST` | `/api/orders/checkout/cart` | 👤 | `201` | Create order from cart items for one store |
+| `POST` | `/api/orders/checkout` | 👤 | `201` | Direct checkout with explicit item list |
+| `GET` | `/api/orders/mine` | 👤 | `200` | List my orders (paginated) |
+| `GET` | `/api/orders/{id}` | 👤/🏪 | `200` | Get order detail (buyer or store seller) |
+| `GET` | `/api/orders/store/list` | 🏪 | `200` | List orders for my store (paginated, optional status filter) |
+| `PUT` | `/api/orders/{id}/status` | 🏪 | `200` | Update order status |
+
+### POST `/api/orders/checkout/cart` — Request Body
+```json
+{
+  "store_id": 1,
+  "shipping_address_id": 3
+}
+```
+
+### POST `/api/orders/checkout` — Request Body
+```json
+{
+  "store_id": 1,
+  "shipping_address_id": 3,
+  "items": [
+    { "product_id": 5, "quantity": 2 },
+    { "product_id": 8, "quantity": 1 }
+  ]
+}
+```
+
+> **Notes:**
+> - Orders are per-store (single-store checkout)
+> - Product prices are snapshotted at checkout time
+> - Stock is decremented on order creation
+> - Payment integration (QR code) is planned but not yet implemented
+
+---
+
+## 11. Store Ratings
+
+**Prefix:** `/api/ratings`
+
+| Method | Endpoint | Auth | Status | Description |
+|--------|----------|------|--------|-------------|
+| `GET` | `/api/ratings/store/{store_id}` | 🔓 | `200` | Get store rating summary + paginated reviews |
+| `POST` | `/api/ratings` | 👤 | `201` | Rate a store (requires delivered order) |
+| `PUT` | `/api/ratings/{id}` | 👤 | `200` | Update your rating |
+| `DELETE` | `/api/ratings/{id}` | 👤 | `204` | Delete your rating |
+
+### POST `/api/ratings` — Request Body
+```json
+{
+  "store_id": 1,
+  "score": 5,
+  "comment": "Great seller, fast shipping!",
+  "order_id": 12
+}
+```
+
+> **Notes:**
+> - Score is 1–5 (integer)
+> - One rating per buyer per store
+> - Buyer must have at least one `delivered` order at the store
+
 ---
 
 ## Source Files
@@ -538,9 +681,14 @@ Authorization: Bearer <access_token>
 | `app/routers/product_groups.py` | `/api/product-groups` | 4 |
 | `app/routers/inquiries.py` | `/api/inquiries` | 6 |
 | `app/routers/admin.py` | `/api/admin` | 10 |
+| `app/routers/users.py` | `/api/users` | 2 |
+| `app/routers/cart.py` | `/api/cart` | 4 |
+| `app/routers/addresses.py` | `/api/addresses` | 5 |
+| `app/routers/orders.py` | `/api/orders` | 6 |
+| `app/routers/ratings.py` | `/api/ratings` | 4 |
 | `app/main.py` | `/` | 2 |
-| **Total** | | **41** |
+| **Total** | | **62** |
 
 ---
 
-*Last updated: January 26, 2026 — Sellor API v1.0.0*
+*Last updated: April 1, 2026 — Sellor API v1.1.0*

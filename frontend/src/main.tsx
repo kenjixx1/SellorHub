@@ -1,4 +1,5 @@
 import { StrictMode, createContext, useContext, useState, useEffect } from 'react'
+import { API_BASE_URL } from './lib/api'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Link, Route, Routes, useNavigate, useLocation } from 'react-router-dom'
 import './index.css'
@@ -201,7 +202,16 @@ function ProfileDropdown() {
   return (
     <div className="profile-dropdown-container">
       <div className="user-avatar" onClick={() => setIsOpen(!isOpen)}>
-        {user.username.charAt(0).toUpperCase()}
+        {user.avatar_url ? (
+          <img
+            src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_BASE_URL}${user.avatar_url}`}
+            alt={user.username}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+          />
+        ) : (
+          user.username.charAt(0).toUpperCase()
+        )}
       </div>
       
       {isOpen && (

@@ -79,6 +79,9 @@ class UserService:
         
         if update_data.phone_number is not None:
             user.phone_number = update_data.phone_number
+
+        if update_data.avatar_url is not None:
+            user.avatar_url = update_data.avatar_url
         
         self.db.commit()
         self.db.refresh(user)

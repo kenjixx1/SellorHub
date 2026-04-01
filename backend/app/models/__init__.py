@@ -12,6 +12,8 @@ from app.models.order_item import OrderItem
 from app.models.order_status_history import OrderStatusHistory
 from app.models.shipment import Shipment
 from app.models.address import Address
+from app.models.cart import CartItem
+from app.models.store_rating import StoreRating
 
 __all__ = [
     "User",
@@ -25,4 +27,6 @@ __all__ = [
     "OrderStatusHistory",
     "Shipment",
     "Address",
+    "CartItem",
+    "StoreRating",
 ]

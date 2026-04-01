@@ -23,7 +23,11 @@ from app.schemas.address import (
     AddressBase, AddressCreate, AddressUpdate, AddressResponse
 )
 from app.schemas.order import (
-    OrderBase, OrderCreate, OrderResponse, OrderItemCreate, OrderItemResponse
+    OrderBase, OrderCreate, OrderResponse, OrderItemCreate, OrderItemResponse,
+    CheckoutFromCart, OrderStatusUpdate,
+)
+from app.schemas.cart import (
+    CartItemAdd, CartItemUpdate, CartItemResponse, CartResponse,
 )
 
 __all__ = [
@@ -35,4 +39,6 @@ __all__ = [
     "InquiryBase", "InquiryCreate", "InquiryUpdate", "InquiryResponse",
     "AddressBase", "AddressCreate", "AddressUpdate", "AddressResponse",
     "OrderBase", "OrderCreate", "OrderResponse", "OrderItemCreate", "OrderItemResponse",
+    "CheckoutFromCart", "OrderStatusUpdate",
+    "CartItemAdd", "CartItemUpdate", "CartItemResponse", "CartResponse",
 ]

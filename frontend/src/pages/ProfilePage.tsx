@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { apiFetch } from '../lib/api'
+import { apiFetch, apiUpload, API_BASE_URL } from '../lib/api'
+import type { User } from '../lib/auth'
+
+function resolveAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${API_BASE_URL}${url}`
+}
 
 export default function ProfilePage() {
   const { user, refreshMe, token } = useAuth()
@@ -8,7 +15,9 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (user) {
@@ -22,20 +31,16 @@ export default function ProfilePage() {
     e.preventDefault()
     setLoading(true)
     setMessage(null)
-
     try {
-      // Backend note: Verify if there is a PUT /api/auth/me or similar. 
-      // If not, this is a placeholder for the user's intent to "edit page".
-      // Assuming a standard user update endpoint might exist or be needed.
-      await apiFetch('/api/auth/me', {
+      await apiFetch<User>('/api/users/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username,
           email,
-          phone_number: phoneNumber || null
+          phone_number: phoneNumber || null,
         }),
-        token
+        token,
       })
       await refreshMe()
       setMessage({ type: 'success', text: 'Profile updated successfully!' })
@@ -46,7 +51,28 @@ export default function ProfilePage() {
     }
   }
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarUploading(true)
+    setMessage(null)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      await apiUpload<User>('/api/users/me/avatar', form, token)
+      await refreshMe()
+      setMessage({ type: 'success', text: 'Avatar updated!' })
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Avatar upload failed' })
+    } finally {
+      setAvatarUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   if (!user) return <div className="page-container">Please log in to view your profile.</div>
+
+  const avatarSrc = resolveAvatarUrl(user.avatar_url)
 
   return (
     <div className="page-container" style={{ maxWidth: '600px' }}>
@@ -56,10 +82,61 @@ export default function ProfilePage() {
       </p>
 
       {message && (
-        <div className={`validation-hint ${message.type === 'success' ? 'valid' : 'invalid'}`} style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+        <div
+          className={`validation-hint ${message.type === 'success' ? 'valid' : 'invalid'}`}
+          style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}
+        >
           {message.text}
         </div>
       )}
+
+      {/* Avatar section */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div
+          style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            background: 'var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2rem',
+            fontWeight: '700',
+            color: '#fff',
+            flexShrink: 0,
+            border: '2px solid var(--border)',
+          }}
+        >
+          {avatarSrc ? (
+            <img src={avatarSrc} alt={user.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            user.username.charAt(0).toUpperCase()
+          )}
+        </div>
+        <div>
+          <button
+            type="button"
+            className="btn-primary"
+            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+            disabled={avatarUploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {avatarUploading ? 'Uploading...' : 'Change Avatar'}
+          </button>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+            JPEG, PNG, or WebP. Max ~5 MB.
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style={{ display: 'none' }}
+            onChange={handleAvatarChange}
+          />
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -97,10 +174,21 @@ export default function ProfilePage() {
 
         <div className="form-group" style={{ marginTop: '2rem' }}>
           <label className="form-label">Account Role</label>
-          <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid var(--border)' }}>
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              background: 'rgba(0,0,0,0.1)',
+              borderRadius: '0.5rem',
+              color: 'var(--text-muted)',
+              fontSize: '0.9rem',
+              border: '1px solid var(--border)',
+            }}
+          >
             {user.role.toUpperCase()}
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Role cannot be changed after registration.</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+            Role cannot be changed after registration.
+          </p>
         </div>
 
         <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '2rem' }} disabled={loading}>
