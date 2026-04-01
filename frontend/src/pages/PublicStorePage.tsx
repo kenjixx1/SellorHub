@@ -1,0 +1,305 @@
+import { useEffect, useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { getStoreProfile, getStoreGroups, getStoreProducts } from '../lib/stores'
+import type { StoreProfile, PublicStoreGroup, PublicStoreProduct } from '../lib/stores'
+import { ApiError } from '../lib/api'
+
+// ── Product card (rectangular) ────────────────────────────────────────────────
+
+function ProductCard({ product }: { product: PublicStoreProduct }) {
+  const thumbnail = product.images?.[0]?.image_url
+  const isSold = product.status === 'sold'
+
+  return (
+    <Link
+      to={`/products/${product.id}`}
+      className="store-product-card"
+      style={{ opacity: isSold ? 0.7 : 1 }}
+    >
+      <div className="store-product-card-image">
+        {thumbnail ? (
+          <img src={thumbnail} alt={product.title} loading="lazy" />
+        ) : (
+          <div className="store-product-card-placeholder">No Image</div>
+        )}
+        {isSold && <div className="store-product-sold-badge">Sold</div>}
+      </div>
+      <div className="store-product-card-body">
+        <h3 className="store-product-card-title">{product.title}</h3>
+        {product.description && (
+          <p className="store-product-card-desc">
+            {product.description.length > 80
+              ? product.description.slice(0, 80) + '…'
+              : product.description}
+          </p>
+        )}
+        <div className="store-product-card-footer">
+          <span className="store-product-card-price">
+            ฿{Number(product.price).toLocaleString()}
+          </span>
+          <span className="store-product-card-cta">View details →</span>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+// ── Product section (one per group) ──────────────────────────────────────────
+
+function ProductSection({
+  title,
+  products,
+}: {
+  title: string
+  products: PublicStoreProduct[]
+}) {
+  if (products.length === 0) return null
+
+  return (
+    <section className="store-product-section">
+      <h2 className="store-section-title">{title}</h2>
+      <div className="store-product-grid">
+        {products.map((p) => (
+          <ProductCard key={p.id} product={p} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ── Store logo placeholder ────────────────────────────────────────────────────
+
+function StoreLogo({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
+  if (logoUrl) {
+    return (
+      <img
+        src={logoUrl}
+        alt={name}
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: '1rem',
+          objectFit: 'cover',
+          border: '2px solid var(--border)',
+          flexShrink: 0,
+        }}
+      />
+    )
+  }
+  return (
+    <div
+      style={{
+        width: 72,
+        height: 72,
+        borderRadius: '1rem',
+        background: 'linear-gradient(135deg, #818cf8, #c084fc)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '2rem',
+        fontWeight: 800,
+        color: 'white',
+        flexShrink: 0,
+      }}
+    >
+      {name.charAt(0).toUpperCase()}
+    </div>
+  )
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+export default function PublicStorePage() {
+  const { slug } = useParams<{ slug: string }>()
+
+  const [store, setStore] = useState<StoreProfile | null>(null)
+  const [groups, setGroups] = useState<PublicStoreGroup[]>([])
+  const [products, setProducts] = useState<PublicStoreProduct[]>([])
+
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!slug) return
+
+    let cancelled = false
+
+    async function load() {
+      setLoading(true)
+      setNotFound(false)
+      setError(null)
+
+      try {
+        const [storeData, groupsData, productsData] = await Promise.all([
+          getStoreProfile(slug!),
+          getStoreGroups(slug!),
+          getStoreProducts(slug!, { limit: 100 }),
+        ])
+
+        if (cancelled) return
+
+        setStore(storeData)
+        setGroups(groupsData)
+        setProducts(productsData.products)
+      } catch (err) {
+        if (cancelled) return
+        if (err instanceof ApiError && err.status === 404) {
+          setNotFound(true)
+        } else {
+          setError(err instanceof Error ? err.message : 'Failed to load store')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [slug])
+
+  // ── Loading ──────────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="store-page-wrapper">
+        <div className="store-header-skeleton">
+          <div className="skeleton-block" style={{ width: 72, height: 72, borderRadius: '1rem' }} />
+          <div style={{ flex: 1 }}>
+            <div className="skeleton-block" style={{ width: '40%', height: 28, marginBottom: 10 }} />
+            <div className="skeleton-block" style={{ width: '70%', height: 16 }} />
+          </div>
+        </div>
+        <div style={{ padding: '0 5%' }}>
+          <div className="skeleton-block" style={{ width: '20%', height: 22, marginBottom: 16 }} />
+          <div className="store-product-grid">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="skeleton-block store-product-card" style={{ height: 200 }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Not found ────────────────────────────────────────────────────────────────
+
+  if (notFound) {
+    return (
+      <div className="page-container" style={{ maxWidth: 480, textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+        <h1 style={{ margin: '0 0 0.75rem', fontSize: '1.75rem', fontWeight: 800 }}>
+          Store not found
+        </h1>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
+          There's no store at <strong>/store/{slug}</strong>. The URL may have changed or the store may no longer exist.
+        </p>
+        <Link to="/explore" className="btn-secondary">
+          Browse marketplace
+        </Link>
+      </div>
+    )
+  }
+
+  // ── API error ────────────────────────────────────────────────────────────────
+
+  if (error || !store) {
+    return (
+      <div className="page-container" style={{ maxWidth: 480, textAlign: 'center' }}>
+        <h1 style={{ margin: '0 0 0.75rem' }}>Something went wrong</h1>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>{error ?? 'Unknown error'}</p>
+        <button className="btn-secondary" onClick={() => window.location.reload()}>
+          Try again
+        </button>
+      </div>
+    )
+  }
+
+  // ── Build grouped sections client-side ───────────────────────────────────────
+
+  const groupedProducts: Record<number, PublicStoreProduct[]> = {}
+  const ungroupedProducts: PublicStoreProduct[] = []
+
+  for (const p of products) {
+    if (p.group_id != null) {
+      if (!groupedProducts[p.group_id]) groupedProducts[p.group_id] = []
+      groupedProducts[p.group_id].push(p)
+    } else {
+      ungroupedProducts.push(p)
+    }
+  }
+
+  const hasAnyProducts = products.length > 0
+
+  // ── Full page ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="store-page-wrapper">
+
+      {/* Store header */}
+      <div className="store-header">
+        <div className="store-header-inner">
+          <StoreLogo name={store.name} logoUrl={store.logo_url} />
+          <div className="store-header-info">
+            <h1 className="store-header-name">{store.name}</h1>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+              sellor.com/store/<strong style={{ color: 'var(--primary)' }}>{store.slug}</strong>
+            </div>
+            {store.description && (
+              <p className="store-header-desc">{store.description}</p>
+            )}
+            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              {store.product_count != null && (
+                <span>{store.product_count} products</span>
+              )}
+              <span>Joined {new Date(store.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Catalog */}
+      <div className="store-catalog">
+
+        {/* Empty store */}
+        {!hasAnyProducts && (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '4rem 2rem',
+              background: 'var(--glass)',
+              borderRadius: '1rem',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
+            <h2 style={{ margin: '0 0 0.5rem', fontWeight: 700 }}>No products yet</h2>
+            <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+              This store hasn't listed any products yet. Check back soon!
+            </p>
+          </div>
+        )}
+
+        {/* Grouped sections */}
+        {groups.map((group) => {
+          const groupProds = groupedProducts[group.id] ?? []
+          return (
+            <ProductSection
+              key={group.id}
+              title={group.name}
+              products={groupProds}
+            />
+          )
+        })}
+
+        {/* Ungrouped products */}
+        {ungroupedProducts.length > 0 && (
+          <ProductSection
+            title={groups.length > 0 ? 'Other Products' : 'Products'}
+            products={ungroupedProducts}
+          />
+        )}
+      </div>
+    </div>
+  )
+}

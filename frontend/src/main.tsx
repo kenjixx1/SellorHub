@@ -13,7 +13,11 @@ import EditProductPage from './pages/EditProductPage'
 import ExplorePage from './pages/ExplorePage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import ProfilePage from './pages/ProfilePage'
+import PublicStorePage from './pages/PublicStorePage'
+import StoresPage from './pages/StoresPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
+import { listStores } from './lib/stores'
+import type { StoreProfile } from './lib/stores'
 
 // Global search context
 type SearchContextType = {
@@ -49,39 +53,126 @@ function SearchProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-function HomePage() {
-  const { user } = useAuth();
+function HomeStoreCard({ store }: { store: StoreProfile }) {
   return (
-    <div className="hero">
-      <div className="hero-content">
-        <h1>Transform Your Sales Journey with <span>SellorHub</span></h1>
-        <p>
-          The ultimate platform to manage, showcase, and skyrocket your sales. Join thousands of top sellers today.
-        </p>
-        <div className="hero-actions">
-          {user ? (
-            user.role !== 'buyer' && (
-              <Link
-                to={user.role === 'admin' ? '/admin' : '/seller'}
-                className="btn-primary btn-large"
-              >
-                {user.role === 'admin' ? 'Admin Dashboard' : 'Seller Dashboard'}
-              </Link>
-            )
-          ) : (
-            <>
-              <Link to="/explore" className="btn-primary btn-large">Explore Marketplace</Link>
-              <Link to="/register" className="btn-secondary btn-large">Start Selling Now</Link>
-            </>
+    <Link to={`/store/${store.slug}`} className="dir-store-card">
+      <div
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: '0.75rem',
+          background: store.logo_url
+            ? undefined
+            : 'linear-gradient(135deg, #818cf8, #c084fc)',
+          backgroundImage: store.logo_url ? `url(${store.logo_url})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.2rem',
+          fontWeight: 800,
+          color: 'white',
+          flexShrink: 0,
+          border: '1px solid var(--border)',
+        }}
+      >
+        {!store.logo_url && store.name.charAt(0).toUpperCase()}
+      </div>
+      <div className="dir-store-card-body">
+        <h3 className="dir-store-card-name">{store.name}</h3>
+        {store.description && (
+          <p className="dir-store-card-desc">{store.description}</p>
+        )}
+        <div className="dir-store-card-meta">
+          {store.product_count != null && (
+            <span>{store.product_count} product{store.product_count !== 1 ? 's' : ''}</span>
           )}
         </div>
       </div>
-      <div className="hero-graphics">
-        <div className="glass-card float-1">📦 Manage Inventory</div>
-        <div className="glass-card float-2">📈 Track Sales</div>
-        <div className="glass-card float-3">🤝 Connect with Buyers</div>
+      <span className="dir-store-card-cta">Visit →</span>
+    </Link>
+  )
+}
+
+function HomePage() {
+  const { user } = useAuth()
+  const [featuredStores, setFeaturedStores] = useState<StoreProfile[]>([])
+  const [storesLoading, setStoresLoading] = useState(true)
+
+  useEffect(() => {
+    listStores({ limit: 6 })
+      .then((res) => setFeaturedStores(res.items))
+      .catch(() => {})
+      .finally(() => setStoresLoading(false))
+  }, [])
+
+  return (
+    <>
+      <div className="hero">
+        <div className="hero-content">
+          <h1>Transform Your Sales Journey with <span>SellorHub</span></h1>
+          <p>
+            The ultimate platform to manage, showcase, and skyrocket your sales. Join thousands of top sellers today.
+          </p>
+          <div className="hero-actions">
+            {user ? (
+              user.role !== 'buyer' && (
+                <Link
+                  to={user.role === 'admin' ? '/admin' : '/seller'}
+                  className="btn-primary btn-large"
+                >
+                  {user.role === 'admin' ? 'Admin Dashboard' : 'Seller Dashboard'}
+                </Link>
+              )
+            ) : (
+              <>
+                <Link to="/explore" className="btn-primary btn-large">Explore Marketplace</Link>
+                <Link to="/register" className="btn-secondary btn-large">Start Selling Now</Link>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="hero-graphics">
+          <div className="glass-card float-1">📦 Manage Inventory</div>
+          <div className="glass-card float-2">📈 Track Sales</div>
+          <div className="glass-card float-3">🤝 Connect with Buyers</div>
+        </div>
       </div>
-    </div>
+
+      {/* Latest stores preview */}
+      <div className="home-stores-section">
+        <div className="home-stores-header">
+          <h2 className="home-stores-title">Latest Stores</h2>
+          <Link to="/stores" className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.4rem 1rem' }}>
+            View all stores →
+          </Link>
+        </div>
+
+        {storesLoading ? (
+          <div className="home-stores-grid">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="dir-store-card" style={{ pointerEvents: 'none' }}>
+                <div className="skeleton-block" style={{ width: 48, height: 48, borderRadius: '0.75rem', flexShrink: 0 }} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div className="skeleton-block" style={{ width: '50%', height: 16 }} />
+                  <div className="skeleton-block" style={{ width: '75%', height: 13 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : featuredStores.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', background: 'var(--glass)', borderRadius: '1rem', border: '1px solid var(--border)' }}>
+            No stores yet — be the first to{' '}
+            <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>start selling</Link>!
+          </div>
+        ) : (
+          <div className="home-stores-grid">
+            {featuredStores.map((s) => <HomeStoreCard key={s.id} store={s} />)}
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 
@@ -232,6 +323,25 @@ function AppShell() {
             Explore
           </Link>
 
+          <Link
+            to="/stores"
+            className="nav-link"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              color: 'var(--text)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Stores
+          </Link>
+
           <GlobalSearchBar />
         </div>
 
@@ -261,6 +371,8 @@ function AppShell() {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/store/:slug" element={<PublicStorePage />} />
+          <Route path="/stores" element={<StoresPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>

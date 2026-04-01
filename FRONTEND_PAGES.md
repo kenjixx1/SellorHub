@@ -21,6 +21,9 @@ Concise inventory of **routes/screens** for the SPA. Routes live in [`frontend/s
 | `/explore` | Done | [`frontend/src/pages/ExplorePage.tsx`](frontend/src/pages/ExplorePage.tsx) — Public marketplace grid (Mercari-style) with global search. |
 | `/products/:id` | Done | [`frontend/src/pages/ProductDetailPage.tsx`](frontend/src/pages/ProductDetailPage.tsx) — Product details, gallery, and inquiry form. |
 | `/profile` | Done | [`frontend/src/pages/ProfilePage.tsx`](frontend/src/pages/ProfilePage.tsx) — Edit user profile information. |
+| `/store/:slug` | Done (MVP) | [`frontend/src/pages/PublicStorePage.tsx`](frontend/src/pages/PublicStorePage.tsx) — Public storefront; store header (logo, name, description, meta), products grouped by category with rectangular cards, ungrouped products shown last; handles loading skeleton, 404, empty store states. |
+| `/stores` | Done (MVP) | [`frontend/src/pages/StoresPage.tsx`](frontend/src/pages/StoresPage.tsx) — Public store directory; debounced search, paginated store cards with logo/name/description/product count, loading skeletons, empty state, links to `/store/:slug`. Navbar link next to Explore. |
+| `/` (home) | Updated | `HomePage` in [`frontend/src/main.tsx`](frontend/src/main.tsx) — now includes a "Latest Stores" preview section showing the 6 newest stores with a "View all stores" link to `/stores`. |
 
 
 
@@ -33,8 +36,6 @@ Pages implied by MVP scope not yet built in the UI.
 
 ### Public / discovery
 
-- Store directory or home browse (all stores / featured).
-- Public store page (unique slug / URL), e.g. `/store/:slug`.
 - Product listing (per store and/or global catalog) with search and filters.
 - Product detail (images, description, link to seller / store).
 - Submit inquiry (from product or store, or a dedicated form route).
