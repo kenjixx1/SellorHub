@@ -43,6 +43,30 @@ export async function apiFetch<T>(
   return body as T
 }
 
+/** Upload a file via multipart/form-data. Browser sets Content-Type + boundary automatically. */
+export async function apiUpload<T>(
+  path: string,
+  formData: FormData,
+  token?: string | null,
+): Promise<T> {
+  const res = await fetch(buildUrl(path), {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  const contentType = res.headers.get('content-type') ?? ''
+  const isJson = contentType.includes('application/json')
+  const body = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null)
+
+  if (!res.ok) {
+    const msg = formatErrorMessage(isJson, body, res.statusText)
+    throw new ApiError(msg, res.status, body)
+  }
+
+  return body as T
+}
+
 /** Turn FastAPI `detail` (string | object | array) into a readable message. */
 function formatErrorMessage(isJson: boolean, body: unknown, statusText: string): string {
   if (!isJson || !body || typeof body !== 'object') {

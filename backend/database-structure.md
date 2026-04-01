@@ -238,3 +238,42 @@ Ref: shipments.order_id > orders.id
 
 Ref: addresses.user_id > users.id
 Ref: orders.shipping_address_id > addresses.id
+
+
+/* ─── New tables (v1.1) ─── */
+
+Table cart_items {
+  id integer [pk, increment]
+  user_id integer [not null, ref: > users.id]
+  product_id integer [not null, ref: > products.id]
+  quantity integer [not null, default: 1]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (user_id, product_id) [unique, name: "uq_cart_user_product"]
+  }
+
+  Note: "Persistent buyer shopping cart"
+}
+
+
+Table store_ratings {
+  id integer [pk, increment]
+  store_id integer [not null, ref: > stores.id]
+  buyer_id integer [not null, ref: > users.id]
+  order_id integer [ref: > orders.id]
+  score integer [not null, note: "1-5"]
+  comment text
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (store_id, buyer_id) [unique, name: "uq_store_rating_buyer"]
+  }
+
+  Note: "Buyer reviews for stores. Requires delivered order."
+}
+
+
+/* users table now also has: avatar_url varchar (nullable) */

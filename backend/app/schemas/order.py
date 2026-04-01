@@ -38,6 +38,18 @@ class OrderCreate(OrderBase):
     items: List[OrderItemCreate] = Field(..., min_length=1)
 
 
+class CheckoutFromCart(BaseModel):
+    """Checkout using items already in the cart for one store."""
+    store_id: int
+    shipping_address_id: int
+
+
+class OrderStatusUpdate(BaseModel):
+    """Update order status."""
+    status: OrderStatus
+    note: Optional[str] = None
+
+
 class OrderResponse(OrderBase):
     """Schema for order response."""
     id: int

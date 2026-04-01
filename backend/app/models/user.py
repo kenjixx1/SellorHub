@@ -29,6 +29,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.BUYER)
     phone_number = Column(String, unique=True, nullable=True)
+    avatar_url = Column(String, nullable=True)
     selling_approve = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     

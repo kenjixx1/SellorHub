@@ -10,6 +10,7 @@ export type User = {
   role: UserRole
   selling_approve: boolean
   created_at: string
+  avatar_url?: string | null
 }
 
 export type TokenResponse = {
