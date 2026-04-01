@@ -36,12 +36,12 @@ export default function ExplorePage() {
   }, [debouncedSearch])
 
   return (
-    <div className="explore-page-wrapper">
-      <header className="explore-header" style={{ display: searchQuery ? 'none' : 'block' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
-          Explore <span>Marketplace</span>
+    <div className="explore-page-wrapper" style={{ padding: '2rem 5%' }}>
+      <header className="explore-header" style={{ display: searchQuery ? 'none' : 'block', textAlign: 'left', marginBottom: '2.5rem' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.5rem', background: 'linear-gradient(135deg, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+          Explore Marketplace
         </h1>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
           Discover unique products from sellers all over the platform
         </p>
       </header>
@@ -55,36 +55,44 @@ export default function ExplorePage() {
           {error}
         </div>
       ) : products.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem', background: 'var(--glass)', borderRadius: '1rem', maxWidth: '800px', margin: '0 auto' }}>
-          <p style={{ fontSize: '1.2rem' }}>No products found matching "{searchQuery}"</p>
-          <button className="btn-secondary" onClick={() => setSearchQuery('')} style={{ marginTop: '1rem' }}>
+        <div style={{ textAlign: 'center', padding: '4rem', background: 'var(--glass)', borderRadius: '1rem', maxWidth: '800px', margin: '0 auto', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>No products found matching "{searchQuery}"</p>
+          <button className="btn-secondary" onClick={() => setSearchQuery('')}>
             Clear Search
           </button>
         </div>
       ) : (
-        <div className="full-grid">
+        <div className="store-product-grid">
           {products.map((product) => {
-             const thumbnail = product.images?.[0]?.image_url;
-             const isSold = product.status === 'sold';
-             
-             return (
-              <Link key={product.id} to={`/products/${product.id}`} className="product-card">
-                <div className="product-card-image">
-                  {isSold && <div className="sold-badge">Sold</div>}
+            const thumbnail = product.images?.[0]?.image_url;
+            const isSold = product.status === 'sold';
+
+            return (
+              <Link
+                key={product.id}
+                to={`/products/${product.id}`}
+                className="store-product-card"
+                style={{ opacity: isSold ? 0.7 : 1 }}
+              >
+                <div className="store-product-card-image">
                   {thumbnail ? (
                     <img src={thumbnail} alt={product.title} loading="lazy" />
                   ) : (
-                    <div className="image-placeholder">No Image</div>
+                    <div className="store-product-card-placeholder">No Image</div>
                   )}
-                  <div className="product-card-price">
-                    ฿{parseFloat(product.price).toLocaleString()}
+                  {isSold && <div className="store-product-sold-badge">Sold</div>}
+                </div>
+                <div className="store-product-card-body">
+                  <h3 className="store-product-card-title">{product.title}</h3>
+                  <div className="store-product-card-footer">
+                    <span className="store-product-card-price">
+                      ฿{parseFloat(product.price).toLocaleString()}
+                    </span>
+                    <span className="store-product-card-cta">View details →</span>
                   </div>
                 </div>
-                <div className="product-card-content">
-                  <h3 className="product-card-title">{product.title}</h3>
-                </div>
               </Link>
-             )
+            )
           })}
         </div>
       )}
