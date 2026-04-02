@@ -116,20 +116,36 @@ def list_store_orders(
     "/{order_id}/status",
     response_model=OrderResponse,
     summary="Update order status",
-    description="Seller updates the status of an order in their store.",
+    description=(
+        "Update order status. Sellers may advance most pipeline stages. "
+        "Buyers may only confirm receipt (delivered_pending_confirm → delivered)."
+    ),
 )
 def update_order_status(
     order_id: int,
     data: OrderStatusUpdate,
-    current_user: User = Depends(get_current_active_seller),
-    store: Store = Depends(get_user_store),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
     order = service.get_order(order_id)
-    if not order or order.store_id != store.id:
+    if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    return service.update_order_status(order_id, data.status, current_user.id, data.note)
+
+    # Determine the caller's relationship to this order.
+    seller_store = db.query(Store).filter(
+        Store.id == order.store_id, Store.owner_id == current_user.id
+    ).first()
+    is_seller = seller_store is not None
+    is_buyer = order.buyer_id == current_user.id
+
+    if not is_seller and not is_buyer:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    return service.update_order_status(
+        order_id, data.status, current_user.id, data.note,
+        is_seller=is_seller, is_buyer=is_buyer,
+    )
 
 
 # ── helper ─────────────────────────────────────────────────────────────────────

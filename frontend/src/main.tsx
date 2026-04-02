@@ -11,11 +11,16 @@ import StoreSettingsPage from './pages/StoreSettingsPage'
 import CreateProductPage from './pages/CreateProductPage'
 import ManageProductsPage from './pages/ManageProductsPage'
 import EditProductPage from './pages/EditProductPage'
+import SellerOrdersPage from './pages/SellerOrdersPage'
 import ExplorePage from './pages/ExplorePage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import ProfilePage from './pages/ProfilePage'
 import PublicStorePage from './pages/PublicStorePage'
 import StoresPage from './pages/StoresPage'
+import CartPage from './pages/CartPage'
+import CheckoutPage from './pages/CheckoutPage'
+import OrderSuccessPage from './pages/OrderSuccessPage'
+import OrdersPage from './pages/OrdersPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { listStores } from './lib/stores'
 import type { StoreProfile } from './lib/stores'
@@ -236,6 +241,16 @@ function ProfileDropdown() {
               My Profile
             </button>
 
+            <button 
+              className="dropdown-item" 
+              onClick={() => { navigate('/orders'); setIsOpen(false); }}
+            >
+              <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              My Order
+            </button>
+
             {user.role !== 'buyer' && (
               <button 
                 className="dropdown-item" 
@@ -306,6 +321,7 @@ function GlobalSearchBar() {
 
 function AppShell() {
   const { user } = useAuth()
+
   return (
     <>
       <header className="navbar">
@@ -356,6 +372,14 @@ function AppShell() {
         </div>
 
         <nav className="nav-links" style={{ flexShrink: 0, marginLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          {user && (
+            <Link to="/cart" style={{ display: 'flex', alignItems: 'center', color: 'var(--text)', textDecoration: 'none' }}>
+              <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </Link>
+          )}
+
           {user ? (
             <ProfileDropdown />
           ) : (
@@ -378,12 +402,17 @@ function AppShell() {
           <Route path="/products" element={<ManageProductsPage />} />
           <Route path="/products/new" element={<CreateProductPage />} />
           <Route path="/products/:id/edit" element={<EditProductPage />} />
+          <Route path="/seller/orders" element={<SellerOrdersPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
           <Route path="/store/:slug" element={<PublicStorePage />} />
           <Route path="/stores" element={<StoresPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/checkout/success" element={<OrderSuccessPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
         </Routes>
       </main>
     </>

@@ -8,6 +8,8 @@ import {
 } from '../lib/seller'
 import type { SellerDashboard, SellerProduct, ProductGroup } from '../lib/seller'
 import { ApiError } from '../lib/api'
+import { listStoreOrders } from '../lib/orders'
+import type { OrderResponse } from '../lib/types'
 
 // ── Tiny helpers ──────────────────────────────────────────────────────────────
 
@@ -76,6 +78,11 @@ const statusColors: Record<string, string> = {
   new: '#818cf8',
   replied: '#6ee7b7',
   closed: '#94a3b8',
+  placed: '#818cf8',
+  shipped: '#fcd34d',
+  delivered_pending_confirm: '#fb923c',
+  delivered: '#6ee7b7',
+  cancelled: '#fca5a5',
 }
 
 function StatusBadge({ value }: { value: string }) {
@@ -116,6 +123,10 @@ export default function SellerDashboardPage() {
   const [products, setProducts] = useState<SellerProduct[]>([])
   const [productsError, setProductsError] = useState<string | null>(null)
   const [productsLoading, setProductsLoading] = useState(false)
+
+  const [orders, setOrders] = useState<OrderResponse[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [ordersError, setOrdersError] = useState<string | null>(null)
 
   const [groups, setGroups] = useState<ProductGroup[]>([])
   const [groupsError, setGroupsError] = useState<string | null>(null)
@@ -159,11 +170,25 @@ export default function SellerDashboardPage() {
     }
   }
 
+  const fetchOrders = async () => {
+    setOrdersLoading(true)
+    try {
+      const data = await listStoreOrders(activeToken, undefined, 1, 5)
+      setOrders(data.items)
+      setOrdersError(null)
+    } catch (err: any) {
+      setOrdersError(err?.message ?? 'Failed to load orders')
+    } finally {
+      setOrdersLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (!activeToken || !user || user.role !== 'seller' || !user.selling_approve) return
     fetchDashboard()
     fetchProducts()
     fetchGroups()
+    fetchOrders()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeToken, user])
 
@@ -252,6 +277,9 @@ export default function SellerDashboardPage() {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <Link to="/seller/orders" className="btn-secondary" style={{ textDecoration: 'none' }}>
+            Manage Orders
+          </Link>
           <Link to="/store-settings" className="btn-secondary" style={{ textDecoration: 'none' }}>
             Manage Store
           </Link>
@@ -277,6 +305,64 @@ export default function SellerDashboardPage() {
           </div>
         </section>
       )}
+
+      {/* ── Recent orders ─────────────────────────────────────────── */}
+      <section style={divider}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '1rem',
+          }}
+        >
+          <SectionHeading title="Recent orders" />
+          <Link to="/seller/orders" className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem', textDecoration: 'none' }}>
+            View all
+          </Link>
+        </div>
+        {ordersError ? (
+          <SectionError msg={ordersError} />
+        ) : ordersLoading ? (
+          <EmptyState text="Loading…" />
+        ) : orders.length === 0 ? (
+          <EmptyState text="No orders yet." />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {orders.map((order) => (
+              <div
+                key={order.id}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'auto 1fr auto',
+                  gap: '1rem',
+                  padding: '1rem',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '0.75rem',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '0.5rem', fontWeight: 800, fontSize: '0.9rem' }}>
+                  #{order.id}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                    {order.items.length} {order.items.length === 1 ? 'item' : 'items'} 
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: '0.5rem' }}>
+                      by Buyer #{order.buyer_id}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    Total: ฿{Number(order.total_amount).toLocaleString()} • {new Date(order.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+                <StatusBadge value={order.status.toLowerCase()} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* ── Recent inquiries ──────────────────────────────────────── */}
       <section style={divider}>
