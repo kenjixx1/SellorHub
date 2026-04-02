@@ -191,16 +191,7 @@ export default function ProductDetailPage() {
               <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0 }}>{product.title}</h1>
               {store && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', transform: 'translateY(-4px)' }}>
-                   <span>
-                     by {' '}
-                     <Link 
-                       to={`/store/${store.slug}`} 
-                       className="store-link-hover"
-                       style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}
-                     >
-                       {store.name}
-                     </Link>
-                   </span>
+                   <span>by <Link to={`/store/${store.slug}`} style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>{store.name}</Link></span>
                    {storeRating && storeRating.count > 0 && (
                      <>
                         <span style={{ opacity: 0.3 }}>|</span>

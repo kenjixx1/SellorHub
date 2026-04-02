@@ -9,12 +9,12 @@ import type { CartItem, CartResponse } from '../lib/types'
 export default function CartPage() {
   const { token, user } = useAuth()
   const navigate = useNavigate()
-  
+
   const [cart, setCart] = useState<CartResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stores, setStores] = useState<Record<number, StoreProfile>>({})
-  
+
   // Selection state
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([])
 
@@ -28,11 +28,11 @@ export default function CartPage() {
     try {
       const data = await getCart(token!)
       setCart(data)
-      
+
       // Resolve store names
       const storeIds = Array.from(new Set(data.items.map(i => i.product.store_id)))
       await resolveStoreNames(storeIds)
-      
+
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load cart')
@@ -63,7 +63,7 @@ export default function CartPage() {
 
   // Handle Selection
   const toggleItem = (id: number) => {
-    setSelectedItemIds(prev => 
+    setSelectedItemIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     )
   }
@@ -134,16 +134,16 @@ export default function CartPage() {
   const totalAmount = selectedItems.reduce((sum, i) => sum + (Number(i.product.price) * i.quantity), 0)
 
   if (!user) return <div className="page-container">Please log in to view your cart.</div>
-  
+
   return (
-    <div className="page-container" style={{ 
-      maxWidth: '1000px', 
-      paddingBottom: cart?.items.length === 0 ? '4rem' : '180px', 
-      minHeight: cart?.items.length === 0 ? 'auto' : '80vh' 
+    <div className="page-container" style={{
+      maxWidth: '1000px',
+      paddingBottom: cart?.items.length === 0 ? '4rem' : '180px',
+      minHeight: cart?.items.length === 0 ? 'auto' : '80vh'
     }}>
-      <button 
-        onClick={() => navigate(-1)} 
-        style={{ 
+      <button
+        onClick={() => navigate(-1)}
+        style={{
           background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem',
           padding: 0, fontWeight: 600, fontSize: '0.9rem'
@@ -158,10 +158,10 @@ export default function CartPage() {
       </button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-         <h1 style={{ margin: 0, fontSize: '2.25rem' }}>Shopping Cart</h1>
-         {cart && cart.items.length > 0 && (
-           <span style={{ color: 'var(--text-muted)', fontSize: '1.25rem', marginTop: '0.5rem' }}>{cart.total_items} items</span>
-         )}
+        <h1 style={{ margin: 0, fontSize: '2.25rem' }}>Shopping Cart</h1>
+        {cart && cart.items.length > 0 && (
+          <span style={{ color: 'var(--text-muted)', fontSize: '1.25rem', marginTop: '0.5rem' }}>{cart.total_items} items</span>
+        )}
       </div>
 
       {loading && !cart ? (
@@ -180,8 +180,8 @@ export default function CartPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           {/* Header row */}
-          <div style={{ 
-            display: 'grid', 
+          <div style={{
+            display: 'grid',
             gridTemplateColumns: '45px 3fr 1fr 1.2fr 1.2fr 45px',
             padding: '1.25rem',
             background: 'var(--glass)',
@@ -203,24 +203,24 @@ export default function CartPage() {
 
           {/* Store Groups */}
           {groups.map(group => (
-            <div key={group.storeId} style={{ 
-              background: 'var(--glass)', 
-              borderRadius: '1rem', 
+            <div key={group.storeId} style={{
+              background: 'var(--glass)',
+              borderRadius: '1rem',
               border: '1px solid var(--border)',
               overflow: 'hidden',
               boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
             }}>
               {/* Store Header */}
-              <div style={{ 
-                padding: '1rem 1.25rem', 
+              <div style={{
+                padding: '1rem 1.25rem',
                 borderBottom: '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '1.25rem',
                 background: 'rgba(255,255,255,0.03)'
               }}>
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   style={{ width: '18px', height: '18px' }}
                   checked={group.items.length > 0 && group.items.every(i => selectedItemIds.includes(i.id))}
                   onChange={() => toggleStore(group.storeId, group.items.map(i => i.id))}
@@ -236,35 +236,35 @@ export default function CartPage() {
               {/* Items */}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {group.items.map(item => (
-                  <div key={item.id} style={{ 
-                    display: 'grid', 
+                  <div key={item.id} style={{
+                    display: 'grid',
                     gridTemplateColumns: '45px 3fr 1fr 1.2fr 1.2fr 45px',
                     padding: '1.5rem 1.25rem',
                     borderBottom: '1px solid var(--border)',
                     alignItems: 'center',
                     minHeight: '120px'
                   }}>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       style={{ width: '18px', height: '18px' }}
                       checked={selectedItemIds.includes(item.id)}
                       onChange={() => toggleItem(item.id)}
                     />
-                    
+
                     <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                      <div style={{ 
-                        width: '80px', 
-                        height: '80px', 
-                        background: 'rgba(255,255,255,0.05)', 
+                      <div style={{
+                        width: '80px',
+                        height: '80px',
+                        background: 'rgba(255,255,255,0.05)',
                         borderRadius: '0.75rem',
                         overflow: 'hidden',
                         flexShrink: 0,
                         border: '1px solid var(--border)'
                       }}>
                         {item.product.image_url ? (
-                          <img 
-                            src={item.product.image_url.startsWith('http') ? item.product.image_url : `${API_BASE_URL}${item.product.image_url}`} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          <img
+                            src={item.product.image_url.startsWith('http') ? item.product.image_url : `${API_BASE_URL}${item.product.image_url}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             alt={item.product.title}
                           />
                         ) : (
@@ -272,24 +272,24 @@ export default function CartPage() {
                         )}
                       </div>
                       <div style={{ overflow: 'hidden' }}>
-                         <Link to={`/products/${item.product.id}`} style={{ display: 'block', fontWeight: 600, color: '#fff', textDecoration: 'none', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
-                           {item.product.title}
-                         </Link>
-                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            {item.product.stock !== null && item.product.stock < 10 ? (
-                              <span style={{ color: '#f87171' }}>Only {item.product.stock} items left!</span>
-                            ) : (
-                              <span style={{ color: '#4ade80' }}>Available in stock</span>
-                            )}
-                         </div>
+                        <Link to={`/products/${item.product.id}`} style={{ display: 'block', fontWeight: 600, color: '#fff', textDecoration: 'none', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
+                          {item.product.title}
+                        </Link>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {typeof item.product.stock === 'number' && item.product.stock < 10 ? (
+                            <span style={{ color: '#f87171' }}>Only {item.product.stock} items left!</span>
+                          ) : (
+                            <span style={{ color: '#4ade80' }}>Available in stock</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     <div style={{ textAlign: 'center', fontWeight: '500', fontSize: '1.05rem' }}>฿{Number(item.product.price).toLocaleString()}</div>
-                    
+
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.2)' }}>
-                        <button 
+                        <button
                           style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', transition: 'background 0.2s' }}
                           onClick={() => handleQuantity(item, -1)}
                           className="qty-btn"
@@ -298,7 +298,7 @@ export default function CartPage() {
                         <div style={{ padding: '0.4rem 1rem', background: 'rgba(255,255,255,0.02)', minWidth: '45px', textAlign: 'center', fontSize: '1rem', fontWeight: 600 }}>
                           {item.quantity}
                         </div>
-                        <button 
+                        <button
                           style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', transition: 'background 0.2s' }}
                           onClick={() => handleQuantity(item, 1)}
                           className="qty-btn"
@@ -311,7 +311,7 @@ export default function CartPage() {
                       ฿{(Number(item.product.price) * item.quantity).toLocaleString()}
                     </div>
 
-                    <button 
+                    <button
                       style={{ background: 'none', border: 'none', color: '#f87171', padding: '0.5rem', cursor: 'pointer', opacity: 0.8 }}
                       onClick={() => handleDelete(item.id)}
                       onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
@@ -327,18 +327,18 @@ export default function CartPage() {
               </div>
             </div>
           ))}
-          
+
           <div style={{ height: '2rem' }}></div> {/* Spacer */}
         </div>
       )}
 
       {/* Sticky Footer */}
       {cart && cart.items.length > 0 && (
-        <div style={{ 
-          position: 'fixed', 
-          bottom: '1.5rem', 
-          left: '50%', 
-          transform: 'translateX(-50%)', 
+        <div style={{
+          position: 'fixed',
+          bottom: '1.5rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
           width: 'calc(100% - 3rem)',
           maxWidth: '1000px',
           background: 'rgba(18, 18, 18, 0.9)',
@@ -354,8 +354,8 @@ export default function CartPage() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 id="footer-select-all"
                 style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                 checked={selectedItemIds.length > 0 && selectedItemIds.length === cart.items.length}
@@ -374,8 +374,8 @@ export default function CartPage() {
                 ฿{totalAmount.toLocaleString()}
               </div>
             </div>
-            <button 
-              className="btn-primary" 
+            <button
+              className="btn-primary"
               style={{ padding: '1rem 3rem', fontSize: '1.2rem', fontWeight: 800, borderRadius: '10px', boxShadow: '0 4px 15px rgba(129, 140, 248, 0.3)' }}
               onClick={() => {
                 if (selectedItemIds.length === 0) {

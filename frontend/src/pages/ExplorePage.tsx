@@ -122,17 +122,7 @@ export default function ExplorePage() {
                   </div>
                   
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span>
-                      by {' '}
-                      <Link 
-                        to={`/store/${stores[product.store_id]?.slug}`}
-                        className="store-link-hover"
-                        style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {stores[product.store_id]?.name || 'Store'}
-                      </Link>
-                    </span>
+                    <span>by <strong>{stores[product.store_id]?.name || 'Store'}</strong></span>
                     {storeRatings[product.store_id]?.count > 0 && (
                       <>
                         <span style={{ opacity: 0.3 }}>|</span>
