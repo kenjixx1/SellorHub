@@ -16,8 +16,10 @@ import ProductDetailPage from './pages/ProductDetailPage'
 import ProfilePage from './pages/ProfilePage'
 import PublicStorePage from './pages/PublicStorePage'
 import StoresPage from './pages/StoresPage'
+import CartPage from './pages/CartPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { listStores } from './lib/stores'
+import { getCart } from './lib/cart'
 import type { StoreProfile } from './lib/stores'
 
 // Global search context
@@ -305,7 +307,17 @@ function GlobalSearchBar() {
 }
 
 function AppShell() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
+  const [cartCount, setCartCount] = useState(0)
+
+  useEffect(() => {
+    if (token) {
+      getCart(token).then(c => setCartCount(c.total_items)).catch(() => {})
+    } else {
+      setCartCount(0)
+    }
+  }, [token])
+
   return (
     <>
       <header className="navbar">
@@ -356,6 +368,30 @@ function AppShell() {
         </div>
 
         <nav className="nav-links" style={{ flexShrink: 0, marginLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          {user && (
+            <Link to="/cart" style={{ position: 'relative', display: 'flex', alignItems: 'center', color: 'var(--text)', textDecoration: 'none' }}>
+              <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              {cartCount > 0 && (
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '-8px', 
+                  right: '-8px', 
+                  background: 'var(--primary)', 
+                  color: '#fff', 
+                  fontSize: '0.65rem', 
+                  fontWeight: 800, 
+                  padding: '0.1rem 0.4rem', 
+                  borderRadius: '99px',
+                  border: '2px solid #000'
+                }}>
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
+
           {user ? (
             <ProfileDropdown />
           ) : (
@@ -384,6 +420,7 @@ function AppShell() {
           <Route path="/store/:slug" element={<PublicStorePage />} />
           <Route path="/stores" element={<StoresPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/cart" element={<CartPage />} />
         </Routes>
       </main>
     </>

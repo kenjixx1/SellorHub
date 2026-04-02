@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { apiFetch, apiUpload, API_BASE_URL } from '../lib/api'
 import type { User } from '../lib/auth'
+import type { Address } from '../lib/types'
 
 function resolveAvatarUrl(url: string | null | undefined): string | null {
   if (!url) return null
@@ -19,13 +20,106 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Address Management States
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [isAddingAddress, setIsAddingAddress] = useState(false)
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null)
+  const [addressForm, setAddressForm] = useState<Partial<Address>>({
+    label: '',
+    recipient_name: '',
+    phone: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    province: '',
+    postal_code: '',
+    country: 'Thailand',
+    is_default: false,
+  })
+
   useEffect(() => {
     if (user) {
       setUsername(user.username)
       setEmail(user.email)
       setPhoneNumber(user.phone_number || '')
+      fetchAddresses()
     }
   }, [user])
+
+  const fetchAddresses = async () => {
+    try {
+      const data = await apiFetch<Address[]>('/api/addresses', { token })
+      setAddresses(data)
+    } catch (err) {
+      console.error('Failed to fetch addresses:', err)
+    }
+  }
+
+  const handleAddressSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      if (editingAddress) {
+        await apiFetch(`/api/addresses/${editingAddress.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(addressForm),
+          token,
+        })
+      } else {
+        await apiFetch('/api/addresses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(addressForm),
+          token,
+        })
+      }
+      await fetchAddresses()
+      setIsAddingAddress(false)
+      setEditingAddress(null)
+      setAddressForm({
+        label: '',
+        recipient_name: '',
+        phone: '',
+        address_line1: '',
+        address_line2: '',
+        city: '',
+        province: '',
+        postal_code: '',
+        country: 'Thailand',
+        is_default: false,
+      })
+      setMessage({ type: 'success', text: 'Address saved!' })
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to save address' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteAddress = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this address?')) return
+    try {
+      await apiFetch(`/api/addresses/${id}`, { method: 'DELETE', token })
+      await fetchAddresses()
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Delete failed' })
+    }
+  }
+
+  const handleSetDefault = async (id: number) => {
+    try {
+      await apiFetch(`/api/addresses/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_default: true }),
+        token,
+      })
+      await fetchAddresses()
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to set default address' })
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -172,29 +266,225 @@ export default function ProfilePage() {
           />
         </div>
 
-        <div className="form-group" style={{ marginTop: '2rem' }}>
-          <label className="form-label">Account Role</label>
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              background: 'rgba(0,0,0,0.1)',
-              borderRadius: '0.5rem',
-              color: 'var(--text-muted)',
-              fontSize: '0.9rem',
-              border: '1px solid var(--border)',
-            }}
-          >
-            {user.role.toUpperCase()}
+        <div className="form-group">
+          <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Shipping Addresses
+            {!isAddingAddress && !editingAddress && (
+              <button
+                type="button"
+                className="nav-link"
+                style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.75rem' }}
+                onClick={() => setIsAddingAddress(true)}
+              >
+                + Add Address
+              </button>
+            )}
+          </label>
+
+          {/* Add/Edit Form Inline */}
+          {(isAddingAddress || editingAddress) && (
+            <div
+              style={{
+                padding: '1.25rem',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '0.5rem',
+                border: '1px solid var(--primary)',
+                marginBottom: '1rem',
+              }}
+            >
+              <form onSubmit={handleAddressSubmit} onClick={(e) => e.stopPropagation()}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <input
+                    className="form-input"
+                    value={addressForm.label}
+                    onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                    placeholder="Label (Home/Work)"
+                    required
+                    style={{ fontSize: '0.85rem' }}
+                  />
+                  <input
+                    className="form-input"
+                    value={addressForm.recipient_name}
+                    onChange={(e) => setAddressForm({ ...addressForm, recipient_name: e.target.value })}
+                    placeholder="Recipient Name"
+                    required
+                    style={{ fontSize: '0.85rem' }}
+                  />
+                </div>
+                <input
+                  className="form-input"
+                  value={addressForm.phone}
+                  onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                  placeholder="Phone"
+                  required
+                  style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
+                />
+                <input
+                  className="form-input"
+                  value={addressForm.address_line1}
+                  onChange={(e) => setAddressForm({ ...addressForm, address_line1: e.target.value })}
+                  placeholder="Address Line 1"
+                  required
+                  style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
+                />
+                <input
+                  className="form-input"
+                  value={addressForm.address_line2 || ''}
+                  onChange={(e) => setAddressForm({ ...addressForm, address_line2: e.target.value })}
+                  placeholder="Address Line 2 (Optional)"
+                  style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
+                />
+                <input
+                  className="form-input"
+                  value={addressForm.city}
+                  onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                  placeholder="City"
+                  required
+                  style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <input
+                    className="form-input"
+                    value={addressForm.province}
+                    onChange={(e) => setAddressForm({ ...addressForm, province: e.target.value })}
+                    placeholder="Province"
+                    required
+                    style={{ fontSize: '0.85rem' }}
+                  />
+                  <input
+                    className="form-input"
+                    value={addressForm.postal_code}
+                    onChange={(e) => setAddressForm({ ...addressForm, postal_code: e.target.value })}
+                    placeholder="Postal Code"
+                    required
+                    style={{ fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <input
+                    type="checkbox"
+                    id="is_default"
+                    checked={addressForm.is_default}
+                    onChange={(e) => setAddressForm({ ...addressForm, is_default: e.target.checked })}
+                  />
+                  <label htmlFor="is_default" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Set as default address
+                  </label>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ flex: 1, padding: '0.35rem', fontSize: '0.8rem' }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsAddingAddress(false);
+                      setEditingAddress(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{ flex: 1, padding: '0.35rem', fontSize: '0.8rem' }}
+                    onClick={(e) => handleAddressSubmit(e)}
+                  >
+                    Save Address
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {addresses.length === 0 ? (
+              <div className="form-input" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}>
+                No addresses saved.
+              </div>
+            ) : (
+              addresses.map((addr) => (
+                <div
+                  key={addr.id}
+                  className="form-input"
+                  style={{
+                    height: 'auto',
+                    padding: '0.75rem 1rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    border: addr.is_default ? '1px solid var(--primary)' : '1px solid var(--border)',
+                  }}
+                >
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                      <span style={{ fontWeight: 600 }}>{addr.recipient_name}</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 700 }}>[{addr.label}]</span>
+                      {addr.is_default && <span style={{ fontSize: '0.65rem', border: '1px solid var(--primary)', borderRadius: '3px', padding: '0 2px', color: 'var(--primary)' }}>Default</span>}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {addr.address_line1}, {addr.city} {addr.postal_code}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                    {!addr.is_default && (
+                      <button
+                        type="button"
+                        className="nav-link"
+                        style={{ padding: 0, fontSize: '0.75rem', background: 'none', border: 'none', color: 'var(--primary)' }}
+                        onClick={() => handleSetDefault(addr.id)}
+                      >
+                        Set
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="nav-link"
+                      style={{ padding: 0, fontSize: '0.75rem', background: 'none', border: 'none' }}
+                      onClick={() => {
+                        setEditingAddress(addr)
+                        setAddressForm(addr)
+                      }}
+                    >
+                      Edit
+                    </button>
+                    {!addr.is_default && (
+                      <button
+                        type="button"
+                        className="nav-link"
+                        style={{ padding: 0, fontSize: '0.75rem', background: 'none', border: 'none', color: '#f87171' }}
+                        onClick={() => handleDeleteAddress(addr.id)}
+                      >
+                        Del
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Role cannot be changed after registration.
-          </p>
         </div>
 
         <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '2rem' }} disabled={loading}>
           {loading ? 'Saving Changes...' : 'Save Profile'}
         </button>
       </form>
+
+      <div className="form-group" style={{ marginTop: '2.5rem' }}>
+        <label className="form-label">Account Role</label>
+        <div
+          style={{
+            padding: '0.75rem 1rem',
+            background: 'rgba(0,0,0,0.1)',
+            borderRadius: '0.5rem',
+            color: 'var(--text-muted)',
+            fontSize: '0.9rem',
+            border: '1px solid var(--border)',
+          }}
+        >
+          {user.role.toUpperCase()}
+        </div>
+      </div>
     </div>
   )
 }

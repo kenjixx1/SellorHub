@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { getProduct } from '../lib/marketplace'
 import type { PublicProduct } from '../lib/marketplace'
 import { apiFetch } from '../lib/api'
+import { useAuth } from '../auth/AuthContext'
+import { addToCart } from '../lib/cart'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -10,6 +12,11 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeImage, setActiveImage] = useState(0)
+
+  // Cart state
+  const [cartLoading, setCartLoading] = useState(false)
+  const [cartSuccess, setCartSuccess] = useState(false)
+  const { token } = useAuth()
   
   // Inquiry form state
   const [inquiryName, setInquiryName] = useState('')
@@ -56,6 +63,25 @@ export default function ProductDetailPage() {
       alert(err instanceof Error ? err.message : 'Failed to send inquiry')
     } finally {
       setInquiryLoading(false)
+    }
+  }
+
+  async function handleAddToCart() {
+    if (!token) {
+      alert('Please log in to add items to your cart.')
+      return
+    }
+    if (!product) return
+
+    setCartLoading(true)
+    try {
+      await addToCart(token, product.id, 1)
+      setCartSuccess(true)
+      setTimeout(() => setCartSuccess(false), 3000)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to add to cart')
+    } finally {
+      setCartLoading(false)
     }
   }
 
@@ -114,9 +140,19 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          <div className="buy-actions" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Purchase Stub */}
-            <button className="btn-primary btn-large" style={{ borderRadius: '8px', fontSize: '1.25rem' }}>
+          <div className="buy-actions" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+            <button 
+              className="btn-secondary" 
+              style={{ flex: 1, padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', borderRadius: '8px', minWidth: '160px' }}
+              onClick={handleAddToCart}
+              disabled={cartLoading}
+            >
+              <svg style={{ width: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              {cartSuccess ? 'Added!' : 'Add to Cart'}
+            </button>
+            <button className="btn-primary" style={{ flex: 1.5, borderRadius: '8px', fontSize: '1.1rem', fontWeight: 700 }}>
               Go to Purchase
             </button>
           </div>
