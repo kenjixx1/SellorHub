@@ -215,10 +215,10 @@ export default function SellerOrdersPage() {
                 </div>
               </div>
 
-              {/* Status Actions — aligned with backend OrderService transitions */}
-              <div style={{
-                padding: '1.25rem',
-                background: 'rgba(255,255,255,0.03)',
+              {/* Status Actions */}
+              <div style={{ 
+                padding: '1.25rem', 
+                background: 'rgba(255,255,255,0.03)', 
                 borderTop: '1px solid var(--border)',
                 display: 'flex',
                 flexWrap: 'wrap',

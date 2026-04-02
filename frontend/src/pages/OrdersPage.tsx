@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { listMyOrders, updateOrderStatus } from '../lib/orders'
 import { listStores, type StoreProfile } from '../lib/stores'
-import { createRating, getStoreRatings, updateRating } from '../lib/ratings'
+import { createRating } from '../lib/ratings'
 import type { OrderResponse } from '../lib/types'
 
 const STATUS_TABS = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered_pending_confirm', 'delivered', 'cancelled']
@@ -76,44 +76,21 @@ export default function OrdersPage() {
   }
 
   const handleSubmitRating = async () => {
-    if (!token || !ratingOrder || !user) return
+    if (!token || !ratingOrder) return
     setSubmittingRating(true)
-    const payload = {
-      store_id: ratingOrder.store_id,
-      score: ratingScore,
-      comment: ratingComment,
-      order_id: ratingOrder.id
-    }
-    
     try {
-      await createRating(token, payload)
+      await createRating(token, {
+        store_id: ratingOrder.store_id,
+        score: ratingScore,
+        comment: ratingComment,
+        order_id: ratingOrder.id
+      })
       alert('Thank you for your rating!')
       setRatingOrder(null)
       setRatingComment('')
       setRatingScore(5)
     } catch (err: any) {
-      if (err?.message?.includes('already rated') || err?.message?.includes('Use PUT to update')) {
-        try {
-          // Find the existing rating ID
-          const summary = await getStoreRatings(ratingOrder.store_id, 1, 100)
-          const existing = summary.ratings.find(r => r.buyer_id === user.id)
-          
-          if (existing) {
-            await updateRating(token, existing.id, {
-              score: ratingScore,
-              comment: ratingComment
-            })
-            alert('Your rating has been updated!')
-            setRatingOrder(null)
-            setRatingComment('')
-            setRatingScore(5)
-            return
-          }
-        } catch (updateErr: any) {
-          console.error('Update failed:', updateErr)
-        }
-      }
-      alert(err?.message ?? 'Failed to submit rating.')
+      alert(err?.message ?? 'Failed to submit rating. You might have already rated this store.')
     } finally {
       setSubmittingRating(false)
     }

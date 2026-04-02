@@ -186,31 +186,7 @@ class OrderService:
 
     # ── status updates ─────────────────────────────────────────────────────────
 
-    # Valid transitions and who may trigger each:
-    #   is_seller=True means the caller owns the order's store
-    #   is_buyer=True means the caller is the order's buyer
-    _SELLER_TRANSITIONS = {
-        OrderStatus.PLACED: {OrderStatus.PAID, OrderStatus.PACKING, OrderStatus.CANCELLED},
-        OrderStatus.PAID: {OrderStatus.PACKING, OrderStatus.CANCELLED},
-        OrderStatus.PACKING: {OrderStatus.SHIPPED},
-        OrderStatus.SHIPPED: {OrderStatus.DELIVERED_PENDING_CONFIRM},
-        OrderStatus.DELIVERED_PENDING_CONFIRM: {OrderStatus.DELIVERED},
-    }
-
-    _BUYER_TRANSITIONS = {
-        OrderStatus.SHIPPED: {OrderStatus.DELIVERED},
-        OrderStatus.DELIVERED_PENDING_CONFIRM: {OrderStatus.DELIVERED},
-    }
-
-    def update_order_status(
-        self,
-        order_id: int,
-        new_status: OrderStatus,
-        changed_by_user_id: int,
-        note: Optional[str] = None,
-        is_seller: bool = False,
-        is_buyer: bool = False,
-    ) -> Order:
+    def update_order_status(self, order_id: int, new_status: OrderStatus, changed_by_user_id: int, note: Optional[str] = None) -> Order:
         order = self.get_order(order_id)
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
