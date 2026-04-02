@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getProduct } from '../lib/marketplace'
+import { listStores, type StoreProfile } from '../lib/stores'
+import { getStoreRatings } from '../lib/ratings'
 import type { PublicProduct } from '../lib/marketplace'
 import { apiFetch } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
@@ -12,6 +14,8 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<PublicProduct | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [store, setStore] = useState<StoreProfile | null>(null)
+  const [storeRating, setStoreRating] = useState<{ score: number; count: number } | null>(null)
   const [activeImage, setActiveImage] = useState(0)
 
   // Cart state
@@ -34,6 +38,17 @@ export default function ProductDetailPage() {
       try {
         const data = await getProduct(parseInt(id))
         setProduct(data)
+        
+        // Fetch store info and rating in parallel
+        const [allStores, ratingData] = await Promise.all([
+          listStores(),
+          getStoreRatings(data.store_id)
+        ])
+        
+        const foundStore = allStores.items.find((s: StoreProfile) => s.id === data.store_id)
+        if (foundStore) setStore(foundStore)
+        setStoreRating({ score: ratingData.average_score || 0, count: ratingData.total_ratings })
+        
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load product')
       } finally {
@@ -172,7 +187,35 @@ export default function ProductDetailPage() {
         {/* Info Section - 40% approx */}
         <div className="info-section" style={{ flex: '0.8', minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="info-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.5rem' }}>{product.title}</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0 }}>{product.title}</h1>
+              {store && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', transform: 'translateY(-4px)' }}>
+                   <span>
+                     by {' '}
+                     <Link 
+                       to={`/store/${store.slug}`} 
+                       className="store-link-hover"
+                       style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}
+                     >
+                       {store.name}
+                     </Link>
+                   </span>
+                   {storeRating && storeRating.count > 0 && (
+                     <>
+                        <span style={{ opacity: 0.3 }}>|</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fbbf24' }}>
+                           <svg style={{ width: '0.8rem', height: '0.8rem' }} fill="currentColor" viewBox="0 0 20 20">
+                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                           </svg>
+                           <span style={{ fontWeight: 700 }}>{Number(storeRating.score).toFixed(1)}</span>
+                           <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>({storeRating.count})</span>
+                        </div>
+                     </>
+                   )}
+                </div>
+              )}
+            </div>
             <div className="price-tag" style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text)' }}>
               ฿{parseFloat(product.price).toLocaleString()}
               <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '400', marginLeft: '0.5rem' }}>tax included</span>

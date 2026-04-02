@@ -532,10 +532,20 @@ Authorization: Bearer <access_token>
 | `placed` | Order created, awaiting payment |
 | `paid` | Payment confirmed |
 | `packing` | Seller is preparing the order |
-| `shipped` | Order shipped |
-| `delivered` | Order delivered to buyer |
+| `shipped` | Order shipped by seller |
+| `delivered_pending_confirm` | Seller marked as delivered — awaiting buyer confirmation |
+| `delivered` | Buyer (or seller) confirmed receipt; order complete |
 | `cancelled` | Order cancelled |
 | `refunded` | Payment refunded |
+
+#### Allowed status transitions
+| From | To | Who may trigger |
+|------|----|-----------------|
+| `placed` | `paid`, `packing`, `cancelled` | Seller |
+| `paid` | `packing`, `cancelled` | Seller |
+| `packing` | `shipped` | Seller |
+| `shipped` | `delivered_pending_confirm` | Seller |
+| `delivered_pending_confirm` | `delivered` | Seller **or** Buyer |
 
 ---
 
@@ -613,7 +623,7 @@ Authorization: Bearer <access_token>
 | `GET` | `/api/orders/mine` | 👤 | `200` | List my orders (paginated) |
 | `GET` | `/api/orders/{id}` | 👤/🏪 | `200` | Get order detail (buyer or store seller) |
 | `GET` | `/api/orders/store/list` | 🏪 | `200` | List orders for my store (paginated, optional status filter) |
-| `PUT` | `/api/orders/{id}/status` | 🏪 | `200` | Update order status |
+| `PUT` | `/api/orders/{id}/status` | 👤/🏪 | `200` | Update order status (seller for most transitions; buyer may confirm receipt) |
 
 ### POST `/api/orders/checkout/cart` — Request Body
 ```json

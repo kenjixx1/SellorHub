@@ -79,3 +79,28 @@ export interface DirectCheckoutItem {
     image_url: string | null
   }
 }
+
+export interface RatingBuyerInfo {
+  id: number
+  username: string
+  avatar_url?: string | null
+}
+
+export interface RatingResponse {
+  id: number
+  store_id: number
+  buyer_id: number
+  order_id?: number | null
+  score: number
+  comment?: string | null
+  created_at: string
+  updated_at: string
+  buyer?: RatingBuyerInfo
+}
+
+export interface StoreSummaryRating {
+  store_id: number
+  average_score?: number | null
+  total_ratings: number
+  ratings: RatingResponse[]
+}

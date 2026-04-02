@@ -78,10 +78,6 @@ const statusColors: Record<string, string> = {
   new: '#818cf8',
   replied: '#6ee7b7',
   closed: '#94a3b8',
-  placed: '#818cf8',
-  shipped: '#fcd34d',
-  delivered: '#6ee7b7',
-  cancelled: '#fca5a5',
 }
 
 function StatusBadge({ value }: { value: string }) {

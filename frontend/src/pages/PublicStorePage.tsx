@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getStoreProfile, getStoreGroups, getStoreProducts } from '../lib/stores'
+import { getStoreRatings } from '../lib/ratings'
 import type { StoreProfile, PublicStoreGroup, PublicStoreProduct } from '../lib/stores'
-import { ApiError } from '../lib/api'
+import type { StoreSummaryRating } from '../lib/types'
+import { ApiError, API_BASE_URL } from '../lib/api'
 
 // ── Product card (rectangular) ────────────────────────────────────────────────
 
@@ -115,6 +117,7 @@ export default function PublicStorePage() {
   const [store, setStore] = useState<StoreProfile | null>(null)
   const [groups, setGroups] = useState<PublicStoreGroup[]>([])
   const [products, setProducts] = useState<PublicStoreProduct[]>([])
+  const [ratings, setRatings] = useState<StoreSummaryRating | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -142,6 +145,10 @@ export default function PublicStorePage() {
         setStore(storeData)
         setGroups(groupsData)
         setProducts(productsData.products)
+
+        // Fetch ratings separately after store ID is known
+        const ratingsData = await getStoreRatings(storeData.id)
+        if (!cancelled) setRatings(ratingsData)
       } catch (err) {
         if (cancelled) return
         if (err instanceof ApiError && err.status === 404) {
@@ -252,6 +259,15 @@ export default function PublicStorePage() {
               {store.product_count != null && (
                 <span>{store.product_count} products</span>
               )}
+              {ratings && ratings.total_ratings > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#fbbf24' }}>
+                  <svg style={{ width: '1rem', height: '1rem' }} fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  <span style={{ fontWeight: 700 }}>{Number(ratings.average_score).toFixed(1)}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>({ratings.total_ratings} reviews)</span>
+                </div>
+              )}
               <span>Joined {new Date(store.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
             </div>
           </div>
@@ -298,6 +314,56 @@ export default function PublicStorePage() {
             title={groups.length > 0 ? 'Other Products' : 'Products'}
             products={ungroupedProducts}
           />
+        )}
+
+        {/* Reviews Section */}
+        {ratings && ratings.total_ratings > 0 && (
+          <section style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
+             <h2 className="store-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                Buyer Reviews
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>({ratings.total_ratings})</span>
+             </h2>
+
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
+               {ratings.ratings.map(rating => (
+                 <div key={rating.id} style={{ background: 'var(--glass)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border)' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                       <div style={{ width: '40px', height: '40px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: 'var(--primary)' }}>
+                         {rating.buyer?.avatar_url ? (
+                            <img 
+                              src={rating.buyer.avatar_url.startsWith('http') ? rating.buyer.avatar_url : `${API_BASE_URL}${rating.buyer.avatar_url}`} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} 
+                              alt={rating.buyer.username}
+                            />
+                         ) : (
+                            rating.buyer?.username.charAt(0).toUpperCase() || '?'
+                         )}
+                       </div>
+                       <div>
+                         <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{rating.buyer?.username || 'Verified Buyer'}</div>
+                         <div style={{ display: 'flex', gap: '2px', marginTop: '0.2rem' }}>
+                           {[1,2,3,4,5].map(s => (
+                             <svg key={s} style={{ width: '0.8rem', height: '0.8rem', color: s <= rating.score ? '#fbbf24' : 'rgba(255,255,255,0.05)' }} fill="currentColor" viewBox="0 0 20 20">
+                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                             </svg>
+                           ))}
+                         </div>
+                       </div>
+                     </div>
+                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                       {new Date(rating.created_at).toLocaleDateString()}
+                     </div>
+                   </div>
+                   {rating.comment && (
+                     <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: 1.6, color: 'rgba(255,255,255,0.8)' }}>
+                       {rating.comment}
+                     </p>
+                   )}
+                 </div>
+               ))}
+             </div>
+          </section>
         )}
       </div>
     </div>

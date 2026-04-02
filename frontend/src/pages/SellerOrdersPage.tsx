@@ -4,13 +4,25 @@ import { useAuth } from '../auth/AuthContext'
 import { listStoreOrders, updateOrderStatus } from '../lib/orders'
 import type { OrderResponse } from '../lib/types'
 
-const STATUSES = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered', 'cancelled']
+const STATUSES = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered_pending_confirm', 'delivered', 'cancelled']
+
+const STATUS_LABELS: Record<string, string> = {
+  all: 'All',
+  placed: 'Placed',
+  paid: 'Paid',
+  packing: 'Packing',
+  shipped: 'Shipped',
+  delivered_pending_confirm: 'Awaiting Confirm',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+}
 
 const statusColors: Record<string, string> = {
   placed: '#818cf8',
   paid: '#6366f1',
   packing: '#f59e0b',
   shipped: '#10b981',
+  delivered_pending_confirm: '#f97316',
   delivered: '#059669',
   cancelled: '#ef4444',
   refunded: '#94a3b8'
@@ -19,7 +31,7 @@ const statusColors: Record<string, string> = {
 export default function SellerOrdersPage() {
   const { token, user } = useAuth()
   const navigate = useNavigate()
-  
+
   const [orders, setOrders] = useState<OrderResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -59,14 +71,14 @@ export default function SellerOrdersPage() {
   }
 
   if (!user || user.role !== 'seller') {
-     return <div className="page-container">Access Denied</div>
+    return <div className="page-container">Access Denied</div>
   }
 
   return (
     <div className="page-container" style={{ maxWidth: '1000px' }}>
-      <button 
-        onClick={() => navigate('/seller')} 
-        style={{ 
+      <button
+        onClick={() => navigate('/seller')}
+        style={{
           background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem',
           padding: 0, fontWeight: 600, fontSize: '0.9rem'
@@ -82,11 +94,26 @@ export default function SellerOrdersPage() {
 
       <h1 style={{ marginBottom: '2rem' }}>Order Management</h1>
 
+      {error && (
+        <div
+          style={{
+            color: '#fca5a5',
+            background: 'rgba(239,68,68,0.1)',
+            padding: '1rem',
+            borderRadius: '0.75rem',
+            marginBottom: '1.5rem',
+            border: '1px solid rgba(239,68,68,0.2)',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
       {/* Tabs */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '1rem', 
-        marginBottom: '2rem', 
+      <div style={{
+        display: 'flex',
+        gap: '1rem',
+        marginBottom: '2rem',
         borderBottom: '1px solid var(--border)',
         overflowX: 'auto',
         paddingBottom: '0.5rem'
@@ -94,6 +121,7 @@ export default function SellerOrdersPage() {
         {STATUSES.map(s => (
           <button
             key={s}
+            type="button"
             onClick={() => setActiveStatus(s)}
             style={{
               padding: '0.5rem 1rem',
@@ -108,7 +136,7 @@ export default function SellerOrdersPage() {
               transition: 'all 0.2s'
             }}
           >
-            {s.charAt(0).toUpperCase() + s.slice(1)}
+            {STATUS_LABELS[s] ?? s}
           </button>
         ))}
       </div>
@@ -122,16 +150,16 @@ export default function SellerOrdersPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {orders.map(order => (
-            <div key={order.id} style={{ 
-              background: 'var(--glass)', 
-              borderRadius: '1rem', 
+            <div key={order.id} style={{
+              background: 'var(--glass)',
+              borderRadius: '1rem',
               border: '1px solid var(--border)',
               overflow: 'hidden'
             }}>
               {/* Card Header */}
-              <div style={{ 
-                padding: '1.25rem', 
-                background: 'rgba(255,255,255,0.02)', 
+              <div style={{
+                padding: '1.25rem',
+                background: 'rgba(255,255,255,0.02)',
                 borderBottom: '1px solid var(--border)',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -141,7 +169,7 @@ export default function SellerOrdersPage() {
                   <span style={{ fontWeight: 800, fontSize: '1.1rem', marginRight: '1rem' }}>#{order.order_number}</span>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(order.created_at).toLocaleString()}</span>
                 </div>
-                <div style={{ 
+                <div style={{
                   background: (statusColors[order.status.toLowerCase()] || '#94a3b8') + '22',
                   color: statusColors[order.status.toLowerCase()] || '#94a3b8',
                   padding: '0.25rem 0.75rem',
@@ -169,8 +197,8 @@ export default function SellerOrdersPage() {
               </div>
 
               {/* Order Footer */}
-              <div style={{ 
-                padding: '1.25rem', 
+              <div style={{
+                padding: '1.25rem',
                 borderTop: '1px dashed var(--border)',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -187,41 +215,86 @@ export default function SellerOrdersPage() {
                 </div>
               </div>
 
-              {/* Status Actions */}
-              <div style={{ 
-                padding: '1.25rem', 
-                background: 'rgba(255,255,255,0.03)', 
+              {/* Status Actions — aligned with backend OrderService transitions */}
+              <div style={{
+                padding: '1.25rem',
+                background: 'rgba(255,255,255,0.03)',
                 borderTop: '1px solid var(--border)',
                 display: 'flex',
+                flexWrap: 'wrap',
                 gap: '1rem',
                 justifyContent: 'flex-end'
               }}>
                 {order.status.toLowerCase() === 'placed' && (
-                  <button 
-                    className="btn-primary" 
+                  <>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => handleUpdateStatus(order.id, 'paid')}
+                      disabled={updatingId === order.id}
+                    >
+                      Mark as paid
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => handleUpdateStatus(order.id, 'packing')}
+                      disabled={updatingId === order.id}
+                    >
+                      Start packing
+                    </button>
+                  </>
+                )}
+                {order.status.toLowerCase() === 'paid' && (
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => handleUpdateStatus(order.id, 'packing')}
+                    disabled={updatingId === order.id}
+                  >
+                    Start packing
+                  </button>
+                )}
+                {order.status.toLowerCase() === 'packing' && (
+                  <button
+                    type="button"
+                    className="btn-primary"
                     onClick={() => handleUpdateStatus(order.id, 'shipped')}
                     disabled={updatingId === order.id}
                   >
-                    Mark as Shipped
+                    Mark as shipped
                   </button>
                 )}
                 {order.status.toLowerCase() === 'shipped' && (
-                  <button 
-                    className="btn-primary" 
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => handleUpdateStatus(order.id, 'delivered_pending_confirm')}
+                    disabled={updatingId === order.id}
+                    style={{ background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', borderColor: 'rgba(249, 115, 22, 0.3)' }}
+                  >
+                    Mark delivered (await confirm)
+                  </button>
+                )}
+                {order.status.toLowerCase() === 'delivered_pending_confirm' && (
+                  <button
+                    type="button"
+                    className="btn-primary"
                     onClick={() => handleUpdateStatus(order.id, 'delivered')}
                     disabled={updatingId === order.id}
                   >
-                    Mark as Delivered
+                    Confirm completed
                   </button>
                 )}
                 {(order.status.toLowerCase() === 'placed' || order.status.toLowerCase() === 'paid') && (
-                  <button 
-                    className="btn-secondary" 
+                  <button
+                    type="button"
+                    className="btn-secondary"
                     onClick={() => handleUpdateStatus(order.id, 'cancelled')}
                     disabled={updatingId === order.id}
                     style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', borderColor: 'rgba(239, 68, 68, 0.2)' }}
                   >
-                    Cancel Order
+                    Cancel order
                   </button>
                 )}
               </div>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getPublicProducts } from '../lib/marketplace'
+import { listStores, type StoreProfile } from '../lib/stores'
+import { getStoreRatings } from '../lib/ratings'
 import type { PublicProduct } from '../lib/marketplace'
 import { useSearch } from '../main'
 
@@ -8,6 +10,8 @@ export default function ExplorePage() {
   const [products, setProducts] = useState<PublicProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [stores, setStores] = useState<Record<number, StoreProfile>>({})
+  const [storeRatings, setStoreRatings] = useState<Record<number, { score: number; count: number }>>({})
   const { searchQuery, setSearchQuery } = useSearch()
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
 
@@ -23,8 +27,38 @@ export default function ExplorePage() {
     async function loadProducts() {
       setLoading(true)
       try {
-        const data = await getPublicProducts({ search: debouncedSearch })
-        setProducts(data.items || (data as any).products || [])
+        const [productData, storeData] = await Promise.all([
+          getPublicProducts({ search: debouncedSearch }),
+          listStores()
+        ])
+        
+        const productItems = productData.items || (productData as any).products || []
+        setProducts(productItems)
+        
+        const storeMap = storeData.items.reduce((acc: any, s: StoreProfile) => {
+          acc[s.id] = s
+          return acc
+        }, {})
+        setStores(storeMap)
+
+        // Fetch ratings for unique stores present in results
+        const uniqueStoreIds = Array.from(new Set(productItems.map((p: any) => p.store_id)))
+        const ratingsResults = await Promise.all(
+          uniqueStoreIds.map(async (sid: any) => {
+             try {
+                const r = await getStoreRatings(sid)
+                return { id: sid, score: r.average_score, count: r.total_ratings }
+             } catch {
+                return { id: sid, score: 0, count: 0 }
+             }
+          })
+        )
+        const ratingsMap = ratingsResults.reduce((acc: any, res: any) => {
+           acc[res.id] = { score: res.score, count: res.count }
+           return acc
+        }, {})
+        setStoreRatings(ratingsMap)
+        
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load products')
@@ -83,7 +117,34 @@ export default function ExplorePage() {
                   {isSold && <div className="store-product-sold-badge">Sold</div>}
                 </div>
                 <div className="store-product-card-body">
-                  <h3 className="store-product-card-title">{product.title}</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+                    <h3 className="store-product-card-title" style={{ margin: 0 }}>{product.title}</h3>
+                  </div>
+                  
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span>
+                      by {' '}
+                      <Link 
+                        to={`/store/${stores[product.store_id]?.slug}`}
+                        className="store-link-hover"
+                        style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {stores[product.store_id]?.name || 'Store'}
+                      </Link>
+                    </span>
+                    {storeRatings[product.store_id]?.count > 0 && (
+                      <>
+                        <span style={{ opacity: 0.3 }}>|</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#fbbf24' }}>
+                          <svg style={{ width: '0.8rem', height: '0.8rem' }} fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          <span style={{ fontWeight: 700 }}>{Number(storeRatings[product.store_id]?.score).toFixed(1)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <div className="store-product-card-footer">
                     <span className="store-product-card-price">
                       ฿{parseFloat(product.price).toLocaleString()}
