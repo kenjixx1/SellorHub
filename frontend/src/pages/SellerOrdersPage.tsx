@@ -106,6 +106,7 @@ export default function SellerOrdersPage() {
         {STATUSES.map(s => (
           <button
             key={s}
+            type="button"
             onClick={() => setActiveStatus(s)}
             style={{
               padding: '0.5rem 1rem',
@@ -199,51 +200,86 @@ export default function SellerOrdersPage() {
                 </div>
               </div>
 
-              {/* Status Actions */}
+              {/* Status Actions — aligned with backend OrderService transitions */}
               <div style={{ 
                 padding: '1.25rem', 
                 background: 'rgba(255,255,255,0.03)', 
                 borderTop: '1px solid var(--border)',
                 display: 'flex',
+                flexWrap: 'wrap',
                 gap: '1rem',
                 justifyContent: 'flex-end'
               }}>
                 {order.status.toLowerCase() === 'placed' && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => handleUpdateStatus(order.id, 'paid')}
+                      disabled={updatingId === order.id}
+                    >
+                      Mark as paid
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => handleUpdateStatus(order.id, 'packing')}
+                      disabled={updatingId === order.id}
+                    >
+                      Start packing
+                    </button>
+                  </>
+                )}
+                {order.status.toLowerCase() === 'paid' && (
                   <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => handleUpdateStatus(order.id, 'packing')}
+                    disabled={updatingId === order.id}
+                  >
+                    Start packing
+                  </button>
+                )}
+                {order.status.toLowerCase() === 'packing' && (
+                  <button
+                    type="button"
                     className="btn-primary"
                     onClick={() => handleUpdateStatus(order.id, 'shipped')}
                     disabled={updatingId === order.id}
                   >
-                    Mark as Shipped
+                    Mark as shipped
                   </button>
                 )}
                 {order.status.toLowerCase() === 'shipped' && (
                   <button
+                    type="button"
                     className="btn-primary"
                     onClick={() => handleUpdateStatus(order.id, 'delivered_pending_confirm')}
                     disabled={updatingId === order.id}
                     style={{ background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', borderColor: 'rgba(249, 115, 22, 0.3)' }}
                   >
-                    Mark Delivered (Await Confirm)
+                    Mark delivered (await confirm)
                   </button>
                 )}
                 {order.status.toLowerCase() === 'delivered_pending_confirm' && (
                   <button
+                    type="button"
                     className="btn-primary"
                     onClick={() => handleUpdateStatus(order.id, 'delivered')}
                     disabled={updatingId === order.id}
                   >
-                    Confirm Completed
+                    Confirm completed
                   </button>
                 )}
                 {(order.status.toLowerCase() === 'placed' || order.status.toLowerCase() === 'paid') && (
                   <button
+                    type="button"
                     className="btn-secondary"
                     onClick={() => handleUpdateStatus(order.id, 'cancelled')}
                     disabled={updatingId === order.id}
                     style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', borderColor: 'rgba(239, 68, 68, 0.2)' }}
                   >
-                    Cancel Order
+                    Cancel order
                   </button>
                 )}
               </div>
