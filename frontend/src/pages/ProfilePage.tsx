@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { apiFetch, apiUpload, API_BASE_URL } from '../lib/api'
 import type { User } from '../lib/auth'
-import type { Address } from '../lib/types'
+import type { AddressResponse } from '../lib/types'
 
 function resolveAvatarUrl(url: string | null | undefined): string | null {
   if (!url) return null
@@ -20,11 +20,11 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Address Management States
-  const [addresses, setAddresses] = useState<Address[]>([])
-  const [isAddingAddress, setIsAddingAddress] = useState(false)
-  const [editingAddress, setEditingAddress] = useState<Address | null>(null)
-  const [addressForm, setAddressForm] = useState<Partial<Address>>({
+  // AddressResponse Management States
+  const [addresses, setAddressResponsees] = useState<AddressResponse[]>([])
+  const [isAddingAddressResponse, setIsAddingAddressResponse] = useState(false)
+  const [editingAddressResponse, setEditingAddressResponse] = useState<AddressResponse | null>(null)
+  const [addressForm, setAddressResponseForm] = useState<Partial<AddressResponse>>({
     label: '',
     recipient_name: '',
     phone: '',
@@ -42,25 +42,25 @@ export default function ProfilePage() {
       setUsername(user.username)
       setEmail(user.email)
       setPhoneNumber(user.phone_number || '')
-      fetchAddresses()
+      fetchAddressResponsees()
     }
   }, [user])
 
-  const fetchAddresses = async () => {
+  const fetchAddressResponsees = async () => {
     try {
-      const data = await apiFetch<Address[]>('/api/addresses', { token })
-      setAddresses(data)
+      const data = await apiFetch<AddressResponse[]>('/api/addresses', { token })
+      setAddressResponsees(data)
     } catch (err) {
       console.error('Failed to fetch addresses:', err)
     }
   }
 
-  const handleAddressSubmit = async (e: React.FormEvent) => {
+  const handleAddressResponseSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
-      if (editingAddress) {
-        await apiFetch(`/api/addresses/${editingAddress.id}`, {
+      if (editingAddressResponse) {
+        await apiFetch(`/api/addresses/${editingAddressResponse.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(addressForm),
@@ -74,10 +74,10 @@ export default function ProfilePage() {
           token,
         })
       }
-      await fetchAddresses()
-      setIsAddingAddress(false)
-      setEditingAddress(null)
-      setAddressForm({
+      await fetchAddressResponsees()
+      setIsAddingAddressResponse(false)
+      setEditingAddressResponse(null)
+      setAddressResponseForm({
         label: '',
         recipient_name: '',
         phone: '',
@@ -89,7 +89,7 @@ export default function ProfilePage() {
         country: 'Thailand',
         is_default: false,
       })
-      setMessage({ type: 'success', text: 'Address saved!' })
+      setMessage({ type: 'success', text: 'AddressResponse saved!' })
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to save address' })
     } finally {
@@ -97,11 +97,11 @@ export default function ProfilePage() {
     }
   }
 
-  const handleDeleteAddress = async (id: number) => {
+  const handleDeleteAddressResponse = async (id: number) => {
     if (!confirm('Are you sure you want to delete this address?')) return
     try {
       await apiFetch(`/api/addresses/${id}`, { method: 'DELETE', token })
-      await fetchAddresses()
+      await fetchAddressResponsees()
     } catch (err) {
       setMessage({ type: 'error', text: 'Delete failed' })
     }
@@ -115,7 +115,7 @@ export default function ProfilePage() {
         body: JSON.stringify({ is_default: true }),
         token,
       })
-      await fetchAddresses()
+      await fetchAddressResponsees()
     } catch (err) {
       setMessage({ type: 'error', text: 'Failed to set default address' })
     }
@@ -245,7 +245,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Email Address</label>
+          <label className="form-label">Email AddressResponse</label>
           <input
             type="email"
             className="form-input"
@@ -268,21 +268,21 @@ export default function ProfilePage() {
 
         <div className="form-group">
           <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            Shipping Addresses
-            {!isAddingAddress && !editingAddress && (
+            Shipping AddressResponsees
+            {!isAddingAddressResponse && !editingAddressResponse && (
               <button
                 type="button"
                 className="nav-link"
                 style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.75rem' }}
-                onClick={() => setIsAddingAddress(true)}
+                onClick={() => setIsAddingAddressResponse(true)}
               >
-                + Add Address
+                + Add AddressResponse
               </button>
             )}
           </label>
 
           {/* Add/Edit Form Inline */}
-          {(isAddingAddress || editingAddress) && (
+          {(isAddingAddressResponse || editingAddressResponse) && (
             <div
               style={{
                 padding: '1.25rem',
@@ -292,12 +292,12 @@ export default function ProfilePage() {
                 marginBottom: '1rem',
               }}
             >
-              <form onSubmit={handleAddressSubmit} onClick={(e) => e.stopPropagation()}>
+              <form onSubmit={handleAddressResponseSubmit} onClick={(e) => e.stopPropagation()}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <input
                     className="form-input"
                     value={addressForm.label}
-                    onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                    onChange={(e) => setAddressResponseForm({ ...addressForm, label: e.target.value })}
                     placeholder="Label (Home/Work)"
                     required
                     style={{ fontSize: '0.85rem' }}
@@ -305,7 +305,7 @@ export default function ProfilePage() {
                   <input
                     className="form-input"
                     value={addressForm.recipient_name}
-                    onChange={(e) => setAddressForm({ ...addressForm, recipient_name: e.target.value })}
+                    onChange={(e) => setAddressResponseForm({ ...addressForm, recipient_name: e.target.value })}
                     placeholder="Recipient Name"
                     required
                     style={{ fontSize: '0.85rem' }}
@@ -314,7 +314,7 @@ export default function ProfilePage() {
                 <input
                   className="form-input"
                   value={addressForm.phone}
-                  onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                  onChange={(e) => setAddressResponseForm({ ...addressForm, phone: e.target.value })}
                   placeholder="Phone"
                   required
                   style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
@@ -322,22 +322,22 @@ export default function ProfilePage() {
                 <input
                   className="form-input"
                   value={addressForm.address_line1}
-                  onChange={(e) => setAddressForm({ ...addressForm, address_line1: e.target.value })}
-                  placeholder="Address Line 1"
+                  onChange={(e) => setAddressResponseForm({ ...addressForm, address_line1: e.target.value })}
+                  placeholder="AddressResponse Line 1"
                   required
                   style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
                 />
                 <input
                   className="form-input"
                   value={addressForm.address_line2 || ''}
-                  onChange={(e) => setAddressForm({ ...addressForm, address_line2: e.target.value })}
-                  placeholder="Address Line 2 (Optional)"
+                  onChange={(e) => setAddressResponseForm({ ...addressForm, address_line2: e.target.value })}
+                  placeholder="AddressResponse Line 2 (Optional)"
                   style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
                 />
                 <input
                   className="form-input"
                   value={addressForm.city}
-                  onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                  onChange={(e) => setAddressResponseForm({ ...addressForm, city: e.target.value })}
                   placeholder="City"
                   required
                   style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}
@@ -346,7 +346,7 @@ export default function ProfilePage() {
                   <input
                     className="form-input"
                     value={addressForm.province}
-                    onChange={(e) => setAddressForm({ ...addressForm, province: e.target.value })}
+                    onChange={(e) => setAddressResponseForm({ ...addressForm, province: e.target.value })}
                     placeholder="Province"
                     required
                     style={{ fontSize: '0.85rem' }}
@@ -354,7 +354,7 @@ export default function ProfilePage() {
                   <input
                     className="form-input"
                     value={addressForm.postal_code}
-                    onChange={(e) => setAddressForm({ ...addressForm, postal_code: e.target.value })}
+                    onChange={(e) => setAddressResponseForm({ ...addressForm, postal_code: e.target.value })}
                     placeholder="Postal Code"
                     required
                     style={{ fontSize: '0.85rem' }}
@@ -365,7 +365,7 @@ export default function ProfilePage() {
                     type="checkbox"
                     id="is_default"
                     checked={addressForm.is_default}
-                    onChange={(e) => setAddressForm({ ...addressForm, is_default: e.target.checked })}
+                    onChange={(e) => setAddressResponseForm({ ...addressForm, is_default: e.target.checked })}
                   />
                   <label htmlFor="is_default" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     Set as default address
@@ -378,8 +378,8 @@ export default function ProfilePage() {
                     style={{ flex: 1, padding: '0.35rem', fontSize: '0.8rem' }}
                     onClick={(e) => {
                       e.preventDefault();
-                      setIsAddingAddress(false);
-                      setEditingAddress(null);
+                      setIsAddingAddressResponse(false);
+                      setEditingAddressResponse(null);
                     }}
                   >
                     Cancel
@@ -388,9 +388,9 @@ export default function ProfilePage() {
                     type="button"
                     className="btn-primary"
                     style={{ flex: 1, padding: '0.35rem', fontSize: '0.8rem' }}
-                    onClick={(e) => handleAddressSubmit(e)}
+                    onClick={(e) => handleAddressResponseSubmit(e)}
                   >
-                    Save Address
+                    Save AddressResponse
                   </button>
                 </div>
               </form>
@@ -442,8 +442,8 @@ export default function ProfilePage() {
                       className="nav-link"
                       style={{ padding: 0, fontSize: '0.75rem', background: 'none', border: 'none' }}
                       onClick={() => {
-                        setEditingAddress(addr)
-                        setAddressForm(addr)
+                        setEditingAddressResponse(addr)
+                        setAddressResponseForm(addr)
                       }}
                     >
                       Edit
@@ -453,7 +453,7 @@ export default function ProfilePage() {
                         type="button"
                         className="nav-link"
                         style={{ padding: 0, fontSize: '0.75rem', background: 'none', border: 'none', color: '#f87171' }}
-                        onClick={() => handleDeleteAddress(addr.id)}
+                        onClick={() => handleDeleteAddressResponse(addr.id)}
                       >
                         Del
                       </button>

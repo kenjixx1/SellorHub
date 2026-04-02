@@ -92,7 +92,7 @@ export default function CartPage() {
     if (!token) return
     const newQty = item.quantity + delta
     if (newQty < 1) return
-    if (item.product.stock !== null && newQty > item.product.stock) return
+    if (typeof item.product.stock === 'number' && newQty > item.product.stock) return
 
     try {
       const updatedCart = await updateCartItem(token, item.id, newQty)
@@ -141,6 +141,22 @@ export default function CartPage() {
       paddingBottom: cart?.items.length === 0 ? '4rem' : '180px', 
       minHeight: cart?.items.length === 0 ? 'auto' : '80vh' 
     }}>
+      <button 
+        onClick={() => navigate(-1)} 
+        style={{ 
+          background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem',
+          padding: 0, fontWeight: 600, fontSize: '0.9rem'
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+      >
+        <svg style={{ width: '1.1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back
+      </button>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
          <h1 style={{ margin: 0, fontSize: '2.25rem' }}>Shopping Cart</h1>
          {cart && cart.items.length > 0 && (
@@ -286,7 +302,7 @@ export default function CartPage() {
                           style={{ padding: '0.4rem 0.8rem', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', transition: 'background 0.2s' }}
                           onClick={() => handleQuantity(item, 1)}
                           className="qty-btn"
-                          disabled={item.product.stock !== null && item.quantity >= item.product.stock}
+                          disabled={typeof item.product.stock === 'number' && item.quantity >= item.product.stock}
                         >+</button>
                       </div>
                     </div>
@@ -366,6 +382,7 @@ export default function CartPage() {
                   alert('Please select at least one item to checkout.')
                   return
                 }
+                sessionStorage.removeItem('buy_now_item')
                 sessionStorage.setItem('checkout_item_ids', JSON.stringify(selectedItemIds))
                 navigate('/checkout')
               }}

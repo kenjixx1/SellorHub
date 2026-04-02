@@ -53,6 +53,22 @@ export default function RegisterPage() {
 
   return (
     <div className="page-container" style={{ maxWidth: 570 }}>
+      <button 
+        onClick={() => nav(-1)} 
+        style={{ 
+          background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem',
+          padding: 0, fontWeight: 600, fontSize: '0.9rem'
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+      >
+        <svg style={{ width: '1.1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back
+      </button>
+
       <h1 style={{ textAlign: 'center' }}>Create an Account</h1>
       <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>
         Join SellorHub today to start buying and selling!
