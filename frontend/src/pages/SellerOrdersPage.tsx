@@ -94,6 +94,21 @@ export default function SellerOrdersPage() {
 
       <h1 style={{ marginBottom: '2rem' }}>Order Management</h1>
 
+      {error && (
+        <div
+          style={{
+            color: '#fca5a5',
+            background: 'rgba(239,68,68,0.1)',
+            padding: '1rem',
+            borderRadius: '0.75rem',
+            marginBottom: '1.5rem',
+            border: '1px solid rgba(239,68,68,0.2)',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
       {/* Tabs */}
       <div style={{ 
         display: 'flex', 
