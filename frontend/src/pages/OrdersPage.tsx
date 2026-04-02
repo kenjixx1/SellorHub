@@ -6,14 +6,13 @@ import { listStores, type StoreProfile } from '../lib/stores'
 import { createRating } from '../lib/ratings'
 import type { OrderResponse } from '../lib/types'
 
-const STATUS_TABS = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered_pending_confirm', 'delivered', 'cancelled']
+const STATUS_TABS = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered', 'cancelled']
 
 const statusConfig: Record<string, { color: string; label: string }> = {
   placed: { color: '#818cf8', label: 'To Pay' },
   paid: { color: '#6366f1', label: 'To Ship' },
   packing: { color: '#f59e0b', label: 'Packing' },
   shipped: { color: '#10b981', label: 'To Receive' },
-  delivered_pending_confirm: { color: '#f97316', label: 'Confirm Receipt' },
   delivered: { color: '#059669', label: 'Completed' },
   cancelled: { color: '#ef4444', label: 'Cancelled' },
   refunded: { color: '#94a3b8', label: 'Refunded' }
@@ -283,7 +282,7 @@ export default function OrdersPage() {
                 }}>
                   <span style={{ flex: '1 1 8rem', minWidth: 0 }}>Order ID: {order.order_number}</span>
                   <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 auto' }}>
-                    {order.status.toLowerCase() === 'delivered_pending_confirm' && (
+                    {order.status.toLowerCase() === 'shipped' && (
                       <button
                         type="button"
                         className="btn-primary"

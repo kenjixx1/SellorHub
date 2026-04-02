@@ -185,8 +185,26 @@ class OrderService:
         return orders, total
 
     # ── status updates ─────────────────────────────────────────────────────────
+    _SELLER_TRANSITIONS = {
+        OrderStatus.PLACED: {OrderStatus.PACKING, OrderStatus.CANCELLED},
+        OrderStatus.PAID: {OrderStatus.PACKING, OrderStatus.CANCELLED},
+        OrderStatus.PACKING: {OrderStatus.SHIPPED},
+    }
 
-    def update_order_status(self, order_id: int, new_status: OrderStatus, changed_by_user_id: int, note: Optional[str] = None) -> Order:
+    _BUYER_TRANSITIONS = {
+        OrderStatus.SHIPPED: {OrderStatus.DELIVERED},
+        OrderStatus.DELIVERED_PENDING_CONFIRM: {OrderStatus.DELIVERED},
+    }
+
+    def update_order_status(
+        self,
+        order_id: int,
+        new_status: OrderStatus,
+        changed_by_user_id: int,
+        note: Optional[str] = None,
+        is_seller: bool = False,
+        is_buyer: bool = False,
+    ) -> Order:
         order = self.get_order(order_id)
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")

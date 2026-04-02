@@ -23,7 +23,7 @@ export default function ProductDetailPage() {
   const [cartSuccess, setCartSuccess] = useState(false)
   const [buyQuantity, setBuyQuantity] = useState(1)
   const { token } = useAuth()
-  
+
   // Inquiry form state
   const [inquiryName, setInquiryName] = useState('')
   const [inquiryEmail, setInquiryEmail] = useState('')
@@ -38,17 +38,17 @@ export default function ProductDetailPage() {
       try {
         const data = await getProduct(parseInt(id))
         setProduct(data)
-        
+
         // Fetch store info and rating in parallel
         const [allStores, ratingData] = await Promise.all([
           listStores(),
           getStoreRatings(data.store_id)
         ])
-        
+
         const foundStore = allStores.items.find((s: StoreProfile) => s.id === data.store_id)
         if (foundStore) setStore(foundStore)
         setStoreRating({ score: ratingData.average_score || 0, count: ratingData.total_ratings })
-        
+
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load product')
       } finally {
@@ -61,7 +61,7 @@ export default function ProductDetailPage() {
   async function handleInquiry(e: React.FormEvent) {
     e.preventDefault()
     if (!product) return
-    
+
     setInquiryLoading(true)
     try {
       await apiFetch('/api/inquiries', {
@@ -133,9 +133,9 @@ export default function ProductDetailPage() {
 
   return (
     <div className="product-detail-layout" style={{ maxWidth: '1100px', margin: '2rem auto', padding: '0 1rem' }}>
-      <button 
-        onClick={() => navigate(-1)} 
-        style={{ 
+      <button
+        onClick={() => navigate(-1)}
+        style={{
           background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem',
           padding: 0, fontWeight: 600, fontSize: '0.9rem'
@@ -153,28 +153,28 @@ export default function ProductDetailPage() {
         {/* Gallery Section - 60% approx */}
         <div className="gallery-section" style={{ flex: '1.2', minWidth: '350px' }}>
           <div className="main-image-viewport" style={{ background: 'var(--bg-secondary)', borderRadius: '12px', overflow: 'hidden', aspectRatio: '1/1', border: '1px solid var(--border)', position: 'relative' }}>
-             {product.images && product.images.length > 0 ? (
-                <img src={product.images[activeImage]?.image_url || product.images[0].image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-             ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>No Image</div>
-             )}
+            {product.images && product.images.length > 0 ? (
+              <img src={product.images[activeImage]?.image_url || product.images[0].image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>No Image</div>
+            )}
           </div>
-          
+
           {/* Thumbnails */}
           {product.images && product.images.length > 1 && (
             <div className="thumbnail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', marginTop: '1rem' }}>
               {product.images.map((img, idx) => (
-                <button 
-                  key={img.id} 
+                <button
+                  key={img.id}
                   onClick={() => setActiveImage(idx)}
-                  style={{ 
-                    padding: 0, 
-                    border: activeImage === idx ? '2px solid var(--primary)' : '1px solid var(--border)', 
-                    borderRadius: '4px', 
-                    overflow: 'hidden', 
-                    aspectRatio: '1/1', 
-                    background: 'transparent', 
-                    cursor: 'pointer' 
+                  style={{
+                    padding: 0,
+                    border: activeImage === idx ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                    aspectRatio: '1/1',
+                    background: 'transparent',
+                    cursor: 'pointer'
                   }}
                 >
                   <img src={img.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -187,23 +187,23 @@ export default function ProductDetailPage() {
         {/* Info Section - 40% approx */}
         <div className="info-section" style={{ flex: '0.8', minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="info-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
               <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0 }}>{product.title}</h1>
               {store && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', transform: 'translateY(-4px)' }}>
-                   <span>by <Link to={`/store/${store.slug}`} style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>{store.name}</Link></span>
-                   {storeRating && storeRating.count > 0 && (
-                     <>
-                        <span style={{ opacity: 0.3 }}>|</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fbbf24' }}>
-                           <svg style={{ width: '0.8rem', height: '0.8rem' }} fill="currentColor" viewBox="0 0 20 20">
-                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                           </svg>
-                           <span style={{ fontWeight: 700 }}>{Number(storeRating.score).toFixed(1)}</span>
-                           <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>({storeRating.count})</span>
-                        </div>
-                     </>
-                   )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                  <span>by <Link to={`/store/${store.slug}`} style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>{store.name}</Link></span>
+                  {storeRating && storeRating.count > 0 && (
+                    <>
+                      <span style={{ opacity: 0.3 }}>|</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fbbf24' }}>
+                        <svg style={{ width: '0.9rem', height: '0.9rem' }} fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <span style={{ fontWeight: 700 }}>{Number(storeRating.score).toFixed(1)}</span>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>({storeRating.count})</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -216,14 +216,14 @@ export default function ProductDetailPage() {
           <div className="quantity-selector" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '0.75rem' }}>
             <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>Quantity</span>
             <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
-              <button 
+              <button
                 style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.03)', border: 'none', color: '#fff', cursor: 'pointer' }}
                 onClick={() => setBuyQuantity(q => Math.max(1, q - 1))}
               >-</button>
               <div style={{ padding: '0.4rem 1.25rem', minWidth: '45px', textAlign: 'center', fontSize: '1rem', fontWeight: 700 }}>
                 {buyQuantity}
               </div>
-              <button 
+              <button
                 style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.03)', border: 'none', color: '#fff', cursor: 'pointer' }}
                 onClick={() => setBuyQuantity(q => (!product || product.stock === null || product.stock === undefined || q < product.stock) ? q + 1 : q)}
               >+</button>
@@ -234,8 +234,8 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="buy-actions" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-            <button 
-              className="btn-secondary" 
+            <button
+              className="btn-secondary"
               style={{ flex: 1, padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', borderRadius: '8px', minWidth: '160px' }}
               onClick={handleAddToCart}
               disabled={cartLoading}
@@ -253,13 +253,13 @@ export default function ProductDetailPage() {
           <div className="description-section">
             <h3 style={{ fontSize: '1.1rem', marginBottom: '0.75rem', fontWeight: '700' }}>Description</h3>
             <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8', color: 'var(--text)', fontSize: '1rem' }}>
-               {product.description || 'No description provided.'}
+              {product.description || 'No description provided.'}
             </p>
           </div>
 
           <div className="seller-section" style={{ background: 'rgba(255,255,255,0.02)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
-             <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Inquire with Seller</h3>
-             {inquirySuccess ? (
+            <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Inquire with Seller</h3>
+            {inquirySuccess ? (
               <div className="validation-hint valid" style={{ padding: '0.75rem', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '6px' }}>
                 Inquiry sent successfully!
               </div>

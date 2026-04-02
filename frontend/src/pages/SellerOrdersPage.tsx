@@ -4,16 +4,15 @@ import { useAuth } from '../auth/AuthContext'
 import { listStoreOrders, updateOrderStatus } from '../lib/orders'
 import type { OrderResponse } from '../lib/types'
 
-const STATUSES = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered_pending_confirm', 'delivered', 'cancelled']
+const STATUSES = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered', 'cancelled']
 
 const STATUS_LABELS: Record<string, string> = {
   all: 'All',
-  placed: 'Placed',
-  paid: 'Paid',
+  placed: 'To Pay',
+  paid: 'To Ship',
   packing: 'Packing',
   shipped: 'Shipped',
-  delivered_pending_confirm: 'Awaiting Confirm',
-  delivered: 'Delivered',
+  delivered: 'Completed',
   cancelled: 'Cancelled',
 }
 
@@ -216,36 +215,16 @@ export default function SellerOrdersPage() {
               </div>
 
               {/* Status Actions */}
-              <div style={{ 
-                padding: '1.25rem', 
-                background: 'rgba(255,255,255,0.03)', 
+              <div style={{
+                padding: '1.25rem',
+                background: 'rgba(255,255,255,0.03)',
                 borderTop: '1px solid var(--border)',
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: '1rem',
                 justifyContent: 'flex-end'
               }}>
-                {order.status.toLowerCase() === 'placed' && (
-                  <>
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => handleUpdateStatus(order.id, 'paid')}
-                      disabled={updatingId === order.id}
-                    >
-                      Mark as paid
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => handleUpdateStatus(order.id, 'packing')}
-                      disabled={updatingId === order.id}
-                    >
-                      Start packing
-                    </button>
-                  </>
-                )}
-                {order.status.toLowerCase() === 'paid' && (
+                {(order.status.toLowerCase() === 'placed' || order.status.toLowerCase() === 'paid') && (
                   <button
                     type="button"
                     className="btn-primary"
@@ -262,28 +241,7 @@ export default function SellerOrdersPage() {
                     onClick={() => handleUpdateStatus(order.id, 'shipped')}
                     disabled={updatingId === order.id}
                   >
-                    Mark as shipped
-                  </button>
-                )}
-                {order.status.toLowerCase() === 'shipped' && (
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => handleUpdateStatus(order.id, 'delivered_pending_confirm')}
-                    disabled={updatingId === order.id}
-                    style={{ background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', borderColor: 'rgba(249, 115, 22, 0.3)' }}
-                  >
-                    Mark delivered (await confirm)
-                  </button>
-                )}
-                {order.status.toLowerCase() === 'delivered_pending_confirm' && (
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => handleUpdateStatus(order.id, 'delivered')}
-                    disabled={updatingId === order.id}
-                  >
-                    Confirm completed
+                    Confirm shipping
                   </button>
                 )}
                 {(order.status.toLowerCase() === 'placed' || order.status.toLowerCase() === 'paid') && (
