@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { listStoreOrders, updateOrderStatus } from '../lib/orders'
+import { orderService } from '../lib/services/orderService'
 import type { OrderResponse } from '../lib/types'
 
 const STATUSES = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered', 'cancelled']
@@ -46,7 +46,7 @@ export default function SellerOrdersPage() {
     setLoading(true)
     try {
       const statusFilter = activeStatus === 'all' ? undefined : activeStatus
-      const res = await listStoreOrders(token!, statusFilter)
+      const res = await orderService.listStoreOrders(token!, statusFilter)
       setOrders(res.items)
       setError(null)
     } catch (err: any) {
@@ -60,7 +60,7 @@ export default function SellerOrdersPage() {
     if (!token) return
     setUpdatingId(orderId)
     try {
-      await updateOrderStatus(token, orderId, nextStatus)
+      await orderService.updateStatus(token, orderId, nextStatus)
       await loadOrders()
     } catch (err: any) {
       alert(err?.message ?? 'Failed to update status')

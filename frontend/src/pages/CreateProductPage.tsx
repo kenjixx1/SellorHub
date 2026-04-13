@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import {
-  getMyProductGroups,
-  createProduct,
-  uploadProductImage,
-  type ProductGroup,
-  type ProductStatus
-} from '../lib/seller'
+import { sellerService } from '../lib/services/sellerService'
+import { productService } from '../lib/services/productService'
+import type { ProductGroup, ProductStatus } from '../lib/types'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -59,7 +55,7 @@ export default function CreateProductPage() {
 
     async function loadGroups() {
       try {
-        const data = await getMyProductGroups(activeToken)
+        const data = await sellerService.getMyProductGroups(activeToken)
         setGroups(data)
       } catch (err) {
         // Soft error, just log. The select will just be empty.
@@ -172,7 +168,7 @@ export default function CreateProductPage() {
       const valGroupId = groupId ? Number(groupId) : null
       const valStock = stock ? Number(stock) : null
 
-      const newProduct = await createProduct(activeToken, {
+      const newProduct = await productService.create(activeToken, {
         title,
         price: Number(price),
         description: description || undefined,
@@ -198,7 +194,7 @@ export default function CreateProductPage() {
         }
 
         if (fileToUpload) {
-          await uploadProductImage(activeToken, newProduct.id, fileToUpload, position)
+          await productService.uploadImage(activeToken, newProduct.id, fileToUpload, position)
         }
       }
 

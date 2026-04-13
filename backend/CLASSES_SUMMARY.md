@@ -20,11 +20,27 @@ backend/
 │   │   ├── product.py           # Product listing model
 │   │   ├── product_image.py     # Product image model
 │   │   ├── inquiry.py           # Buyer-seller inquiry model
-│   │   ├── address.py           # Shipping address model (Post-MVP)
-│   │   ├── order.py             # Order model (Post-MVP)
-│   │   ├── order_item.py        # Order line item model (Post-MVP)
-│   │   ├── order_status_history.py  # Order tracking model (Post-MVP)
-│   │   └── shipment.py          # Shipment tracking model (Post-MVP)
+│   │   ├── cart.py              # Cart line items (per buyer)
+│   │   ├── address.py           # Shipping address model
+│   │   ├── order.py             # Order model
+│   │   ├── order_item.py        # Order line item model
+│   │   ├── order_status_history.py  # Order status audit log
+│   │   ├── shipment.py          # Shipment tracking model
+│   │   └── store_rating.py      # Store ratings / reviews
+│   │
+│   ├── services/                 # Business logic layer
+│   │   ├── __init__.py
+│   │   ├── auth_service.py
+│   │   ├── user_service.py
+│   │   ├── store_service.py
+│   │   ├── product_group_service.py
+│   │   ├── product_service.py
+│   │   ├── inquiry_service.py
+│   │   ├── cart_service.py
+│   │   ├── address_service.py
+│   │   ├── order_service.py
+│   │   ├── rating_service.py
+│   │   └── admin_service.py
 │   │
 │   ├── schemas/                  # Pydantic Schemas (DTOs)
 │   │   ├── __init__.py
@@ -35,7 +51,9 @@ backend/
 │   │   ├── product_image.py     # Product image schemas
 │   │   ├── inquiry.py           # Inquiry schemas
 │   │   ├── address.py           # Address schemas
-│   │   └── order.py             # Order schemas
+│   │   ├── order.py             # Order schemas
+│   │   ├── cart.py              # Cart API schemas
+│   │   └── rating.py             # Store rating schemas
 │   │
 │   └── utils/                    # Utility Functions
 │       ├── __init__.py
@@ -63,7 +81,8 @@ backend/
 - `email` - Unique email address
 - `password_hash` - Hashed password (bcrypt)
 - `role` - User role (buyer, seller, admin)
-- `phone_number` - Optional phone number
+- `phone_number` - Optional phone number (unique)
+- `avatar_url` - Optional profile image URL
 - `selling_approve` - Seller approval status (boolean)
 - `created_at` - Account creation timestamp
 
@@ -71,6 +90,9 @@ backend/
 - `store` - One-to-one with Store (for sellers)
 - `addresses` - One-to-many with Address
 - `orders` - One-to-many with Order (as buyer)
+- `status_changes` - One-to-many with OrderStatusHistory (as editor)
+- `cart_items` - One-to-many with CartItem (via backref)
+- `store_ratings` - One-to-many with StoreRating (via backref, as buyer)
 
 **Enum:** `UserRole` - buyer, seller, admin
 
@@ -98,6 +120,7 @@ backend/
 - `products` - One-to-many with Product
 - `inquiries` - One-to-many with Inquiry
 - `orders` - One-to-many with Order
+- `ratings` - One-to-many with StoreRating (via `backref="ratings"`)
 
 ---
 
@@ -255,7 +278,7 @@ backend/
 - `status_history` - One-to-many with OrderStatusHistory
 - `shipment` - One-to-one with Shipment
 
-**Enum:** `OrderStatus` - placed, paid, packing, shipped, delivered, cancelled, refunded
+**Enum:** `OrderStatus` - placed, paid, packing, shipped, delivered_pending_confirm, delivered, cancelled, refunded
 
 ---
 
@@ -321,9 +344,262 @@ backend/
 
 ---
 
-## 2. Pydantic Schemas (API DTOs)
+### 1.12 StoreRating Model (`app/models/store_rating.py`)
 
-### 2.1 User Schemas (`app/schemas/user.py`)
+**Class:** `StoreRating`  
+**Table:** `store_ratings`
+
+**Purpose:** One rating (1–5 stars + optional comment) per buyer per store; optionally linked to a completed order.
+
+**Fields:**
+- `id` - Primary key
+- `store_id` - Foreign key to Store
+- `buyer_id` - Foreign key to User
+- `order_id` - Foreign key to Order (nullable)
+- `score` - Integer 1–5
+- `comment` - Optional text
+- `created_at`, `updated_at` - Timestamps
+
+**Relationships:**
+- `store` - Many-to-one with Store
+- `buyer` - Many-to-one with User
+- `order` - Many-to-one with Order (optional)
+
+**Constraints:**
+- Unique (`store_id`, `buyer_id`)
+- Check: `score` between 1 and 5
+
+---
+
+## 2. Service classes (application / business logic)
+
+Services hold **transactional business rules** and orchestrate ORM models. Each service takes a SQLAlchemy **`Session`** in `__init__(self, db: Session)` and is constructed per request from routers. They map closely to **API domains** (not one service per table).
+
+### 2.1 AuthService (`app/services/auth_service.py`)
+
+**Class:** `AuthService`
+
+**Primary entities:** `User`
+
+**Methods:**
+- `register_user(user_data: UserCreate) -> User` — create account, hash password
+- `login_user(login_data: UserLogin) -> Token` — verify credentials, issue JWT
+- `get_user_by_email(email: str) -> Optional[User]`
+- `get_user_by_id(user_id: int) -> Optional[User]`
+
+---
+
+### 2.2 UserService (`app/services/user_service.py`)
+
+**Class:** `UserService`
+
+**Primary entities:** `User`
+
+**Methods:**
+- `get_user_by_id(user_id: int) -> Optional[User]`
+- `update_user_profile(user_id: int, update_data: UserUpdate) -> User`
+- `delete_user(user_id: int) -> bool`
+
+---
+
+### 2.3 StoreService (`app/services/store_service.py`)
+
+**Class:** `StoreService`
+
+**Primary entities:** `Store`, `Product` (counts)
+
+**Methods:**
+- `create_store(store_data: StoreCreate, owner_id: int) -> Store`
+- `get_store_by_id(store_id: int) -> Optional[Store]`
+- `get_store_by_slug(slug: str) -> Optional[Store]`
+- `get_store_by_owner_id(owner_id: int) -> Optional[Store]`
+- `get_all_stores(skip, limit) -> tuple[List[Store], int]`
+- `get_store_with_product_count(store_id: int) -> Optional[dict]`
+- `update_store(store_id: int, update_data: StoreUpdate) -> Store`
+- `delete_store(store_id: int) -> bool`
+- `search_stores(query: str, skip, limit) -> tuple[List[Store], int]`
+
+---
+
+### 2.4 ProductGroupService (`app/services/product_group_service.py`)
+
+**Class:** `ProductGroupService`
+
+**Primary entities:** `ProductGroup`, `Product`
+
+**Methods:**
+- `create_product_group(group_data: ProductGroupCreate, store_id: int) -> ProductGroup`
+- `get_product_group_by_id(group_id: int) -> Optional[ProductGroup]`
+- `get_store_product_groups(store_id: int) -> List[ProductGroup]`
+- `get_store_product_groups_with_counts(store_id: int) -> List[dict]`
+- `update_product_group(group_id: int, name: str, store_id: int) -> ProductGroup`
+- `delete_product_group(group_id: int, store_id: int) -> bool`
+
+---
+
+### 2.5 ProductService (`app/services/product_service.py`)
+
+**Class:** `ProductService`
+
+**Primary entities:** `Product`, `ProductImage`, `Store`
+
+**Methods:**
+- `create_product(product_data: ProductCreate, store_id: int) -> Product`
+- `get_product_by_id(product_id: int, include_hidden: bool = False) -> Optional[Product]`
+- `get_store_products(...)` — seller listing with filters/pagination
+- `search_products(...)` — marketplace search
+- `update_product(product_id: int, update_data: ProductUpdate, store_id: int) -> Product`
+- `delete_product(product_id: int, store_id: int) -> bool`
+- `add_product_image(image_data: ProductImageCreate) -> ProductImage`
+- `delete_product_image(image_id: int, store_id: int) -> bool`
+- `reorder_product_images(product_id: int, image_positions: dict[int, int], store_id: int) -> List[ProductImage]`
+
+---
+
+### 2.6 InquiryService (`app/services/inquiry_service.py`)
+
+**Class:** `InquiryService`
+
+**Primary entities:** `Inquiry`, `Store`, `Product`
+
+**Methods:**
+- `create_inquiry(inquiry_data: InquiryCreate) -> Inquiry`
+- `get_inquiry_by_id(inquiry_id: int) -> Optional[Inquiry]`
+- `get_store_inquiries(...)` — seller inbox
+- `get_product_inquiries(...)`
+- `update_inquiry_status(...)` — e.g. new → replied → closed
+- `delete_inquiry(inquiry_id: int, store_id: int) -> bool`
+- `get_inquiry_statistics(store_id: int) -> dict`
+
+---
+
+### 2.7 CartService (`app/services/cart_service.py`)
+
+**Class:** `CartService`
+
+**Primary entities:** `CartItem`, `Product`
+
+**Methods:**
+- `get_cart(user_id: int) -> dict` — items, totals
+- `add_item(user_id: int, product_id: int, quantity: int) -> dict`
+- `update_item(user_id: int, item_id: int, quantity: int) -> dict`
+- `remove_item(user_id: int, item_id: int) -> dict`
+- `clear_cart(user_id: int) -> dict`
+
+**Notes:** Private helpers `_validate_product`, `_cart_query`, `_to_response` support cart operations.
+
+---
+
+### 2.8 AddressService (`app/services/address_service.py`)
+
+**Class:** `AddressService`
+
+**Primary entities:** `Address`, `User`
+
+**Methods:**
+- `list_addresses(user_id: int) -> List[Address]`
+- `get_address(address_id: int, user_id: int) -> Address`
+- `create_address(user_id: int, data: AddressCreate) -> Address`
+- `update_address(address_id: int, user_id: int, data: AddressUpdate) -> Address`
+- `delete_address(address_id: int, user_id: int) -> bool`
+
+**Notes:** `_clear_defaults` ensures a single default address when needed.
+
+---
+
+### 2.9 OrderService (`app/services/order_service.py`)
+
+**Class:** `OrderService`
+
+**Primary entities:** `Order`, `OrderItem`, `OrderStatusHistory`, `CartItem`, `Product`, `Store`, `Address`
+
+**Methods:**
+- `create_order_from_cart(buyer_id: int, store_id: int, shipping_address_id: int) -> Order`
+- `create_order_direct(buyer_id: int, data: OrderCreate) -> Order`
+- `get_order(order_id: int) -> Optional[Order]`
+- `list_buyer_orders(buyer_id: int, skip: int, limit: int) -> Tuple[List[Order], int]`
+- `list_store_orders(store_id: int, skip: int, limit: int, status_filter: Optional[OrderStatus]) -> Tuple[List[Order], int]`
+- `update_order_status(order_id: int, new_status: OrderStatus, changed_by_user_id: int, note: Optional[str], is_seller: bool, is_buyer: bool) -> Order` — enforces allowed transitions by role
+
+**Notes:** Defines `_SELLER_TRANSITIONS` and `_BUYER_TRANSITIONS` for valid status moves.
+
+---
+
+### 2.10 RatingService (`app/services/rating_service.py`)
+
+**Class:** `RatingService`
+
+**Primary entities:** `StoreRating`, `Order`, `Store`, `User`
+
+**Methods:**
+- `create_rating(buyer_id: int, data: RatingCreate) -> StoreRating`
+- `update_rating(rating_id: int, buyer_id: int, data: RatingUpdate) -> StoreRating`
+- `delete_rating(rating_id: int, buyer_id: int) -> bool`
+- `get_store_ratings(store_id: int, skip: int, limit: int) -> dict`
+
+**Notes:** `_require_completed_order` restricts ratings to buyers with completed orders for the store.
+
+---
+
+### 2.11 AdminService (`app/services/admin_service.py`)
+
+**Class:** `AdminService`
+
+**Primary entities:** `User`, `Store`, `Product` (platform moderation)
+
+**Methods:**
+- `get_all_users(...)` — list with role filters
+- `get_pending_sellers(skip, limit) -> tuple[List[User], int]`
+- `approve_seller(user_id: int, approve: bool = True) -> User`
+- `search_users(...)`
+- `ban_user(user_id: int) -> User`
+- `get_all_stores(skip, limit) -> tuple[List[Store], int]`
+- `hide_store(store_id: int, hide: bool = True) -> Store`
+- `get_all_products(...)`
+- `hide_product(product_id: int) -> Product`
+- `unhide_product(product_id: int) -> Product`
+- `get_platform_statistics() -> dict`
+
+---
+
+### 2.12 Service ↔ model dependency (summary diagram)
+
+Use this in a report as a **layered class diagram**: routers depend on services; services depend on models and `Session`.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FastAPI routers (thin) → instantiate *Service(db) per request     │
+└─────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
+│ AuthService      │  │ UserService      │  │ StoreService         │
+│ User             │  │ User             │  │ Store, Product       │
+└──────────────────┘  └──────────────────┘  └──────────────────────┘
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
+│ ProductGroupServ │  │ ProductService   │  │ InquiryService       │
+│ ProductGroup     │  │ Product, ProductI│  │ Inquiry              │
+└──────────────────┘  └──────────────────┘  └──────────────────────┘
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
+│ CartService      │  │ AddressService   │  │ OrderService         │
+│ CartItem, Product│  │ Address          │  │ Order, OrderItem, …  │
+└──────────────────┘  └──────────────────┘  └──────────────────────┘
+┌──────────────────┐  ┌──────────────────┐
+│ RatingService    │  │ AdminService     │
+│ StoreRating, …   │  │ User, Store, Prod│
+└──────────────────┘  └──────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  SQLAlchemy models (section 1) — tables / relationships          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. Pydantic Schemas (API DTOs)
+
+### 3.1 User Schemas (`app/schemas/user.py`)
 
 **Classes:**
 - `UserBase` - Base user fields
@@ -335,7 +611,7 @@ backend/
 
 ---
 
-### 2.2 Store Schemas (`app/schemas/store.py`)
+### 3.2 Store Schemas (`app/schemas/store.py`)
 
 **Classes:**
 - `StoreBase` - Base store fields
@@ -346,7 +622,7 @@ backend/
 
 ---
 
-### 2.3 ProductGroup Schemas (`app/schemas/product_group.py`)
+### 3.3 ProductGroup Schemas (`app/schemas/product_group.py`)
 
 **Classes:**
 - `ProductGroupBase` - Base fields
@@ -355,7 +631,7 @@ backend/
 
 ---
 
-### 2.4 Product Schemas (`app/schemas/product.py`)
+### 3.4 Product Schemas (`app/schemas/product.py`)
 
 **Classes:**
 - `ProductBase` - Base product fields
@@ -367,7 +643,7 @@ backend/
 
 ---
 
-### 2.5 ProductImage Schemas (`app/schemas/product_image.py`)
+### 3.5 ProductImage Schemas (`app/schemas/product_image.py`)
 
 **Classes:**
 - `ProductImageBase` - Base image fields
@@ -376,7 +652,7 @@ backend/
 
 ---
 
-### 2.6 Inquiry Schemas (`app/schemas/inquiry.py`)
+### 3.6 Inquiry Schemas (`app/schemas/inquiry.py`)
 
 **Classes:**
 - `InquiryBase` - Base inquiry fields
@@ -387,7 +663,7 @@ backend/
 
 ---
 
-### 2.7 Address Schemas (`app/schemas/address.py`)
+### 3.7 Address Schemas (`app/schemas/address.py`)
 
 **Classes:**
 - `AddressBase` - Base address fields
@@ -397,20 +673,44 @@ backend/
 
 ---
 
-### 2.8 Order Schemas (`app/schemas/order.py`)
+### 3.8 Order Schemas (`app/schemas/order.py`)
 
 **Classes:**
 - `OrderItemCreate` - Add item to order
 - `OrderItemResponse` - Order item response
 - `OrderBase` - Base order fields
-- `OrderCreate` - Create order
+- `OrderCreate` - Create order (direct checkout line items)
+- `CheckoutFromCart` - Checkout payload (store + shipping address)
+- `OrderStatusUpdate` - Status change payload (seller / buyer confirm)
 - `OrderResponse` - Order with items
 
 ---
 
-## 3. Utility Classes and Functions
+### 3.9 Cart Schemas (`app/schemas/cart.py`)
 
-### 3.1 Security Utils (`app/utils/security.py`)
+**Classes:**
+- `CartItemAdd` - Add to cart body
+- `CartItemUpdate` - Update line quantity
+- `CartProductSnapshot` - Product fields embedded in cart
+- `CartItemResponse` - Single cart line
+- `CartResponse` - Full cart with totals
+
+---
+
+### 3.10 Rating Schemas (`app/schemas/rating.py`)
+
+**Classes:**
+- `RatingCreate` - Submit rating (store, score, optional order ref)
+- `RatingUpdate` - Update score / comment
+- `RatingBuyerInfo` - Public buyer snippet on ratings
+- `RatingResponse` - Rating row for API
+- `StoreSummaryRating` - Aggregate rating summary for a store
+
+---
+
+## 4. Utility Classes and Functions
+
+### 4.1 Security Utils (`app/utils/security.py`)
 
 **Functions:**
 - `hash_password(password: str)` - Hash password with bcrypt
@@ -420,7 +720,7 @@ backend/
 
 ---
 
-### 3.2 Storage Utils (`app/utils/storage.py`)
+### 4.2 Storage Utils (`app/utils/storage.py`)
 
 **Functions:**
 - `validate_image_file(file)` - Validate uploaded image
@@ -432,7 +732,7 @@ backend/
 
 ---
 
-### 3.3 Dependencies (`app/dependencies.py`)
+### 4.3 Dependencies (`app/dependencies.py`)
 
 **Dependency Functions:**
 - `get_current_user()` - Get authenticated user from JWT
@@ -446,9 +746,9 @@ backend/
 
 ---
 
-## 4. Configuration Classes
+## 5. Configuration Classes
 
-### 4.1 Settings (`app/config.py`)
+### 5.1 Settings (`app/config.py`)
 
 **Class:** `Settings` (Pydantic BaseSettings)
 
@@ -467,7 +767,7 @@ backend/
 
 ---
 
-### 4.2 Database (`app/database.py`)
+### 5.2 Database (`app/database.py`)
 
 **Objects:**
 - `engine` - SQLAlchemy engine
@@ -479,18 +779,18 @@ backend/
 
 ---
 
-## 5. Enumerations
+## 6. Enumerations
 
 All enums are string-based for better API compatibility:
 
 - `UserRole` - buyer, seller, admin
 - `ProductStatus` - active, sold, hidden
 - `InquiryStatus` - new, replied, closed
-- `OrderStatus` - placed, paid, packing, shipped, delivered, cancelled, refunded
+- `OrderStatus` - placed, paid, packing, shipped, delivered_pending_confirm, delivered, cancelled, refunded
 
 ---
 
-## Next Steps
+## 7. Next Steps
 
 1. **Install Dependencies:**
    ```bash
@@ -524,7 +824,7 @@ All enums are string-based for better API compatibility:
 
 ---
 
-## Class Relationships Diagram
+## 8. Class relationships diagram (persistence)
 
 ```
 User (buyer/seller/admin)
@@ -533,18 +833,26 @@ User (buyer/seller/admin)
   │     │     └── Product (1:M)
   │     ├── Product (1:M)
   │     │     ├── ProductImage (1:M)
-  │     │     └── Inquiry (1:M)
+  │     │     ├── Inquiry (1:M)
+  │     │     ├── OrderItem (1:M)
+  │     │     └── CartItem (1:M)
   │     ├── Inquiry (1:M)
-  │     └── Order (1:M)
+  │     ├── Order (1:M)
+  │     └── StoreRating (1:M)
   ├── Address (1:M)
+  ├── CartItem (1:M)
+  ├── StoreRating (1:M as buyer)
+  ├── OrderStatusHistory (1:M as editor)
   └── Order (1:M as buyer)
         ├── OrderItem (1:M)
         ├── OrderStatusHistory (1:M)
-        └── Shipment (1:1)
+        └── Shipment (1:0..1)
 ```
+
+**Services** (section 2) sit above this graph: each service owns workflows on a subset of these entities; they do not add new tables.
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** January 26, 2026  
-**Status:** All MVP and Post-MVP classes implemented
+**Document Version:** 1.1  
+**Last Updated:** April 2, 2026  
+**Status:** Models, services, schemas, and utilities documented

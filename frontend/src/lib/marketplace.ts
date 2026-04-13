@@ -1,5 +1,5 @@
 import { apiFetch } from './api'
-import type { SellerProduct } from './seller'
+import type { SellerProduct } from './types'
 
 export type PublicProduct = SellerProduct & {
   store_name?: string

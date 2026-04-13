@@ -1,16 +1,17 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { getCart, updateCartItem, removeCartItem } from '../lib/cart'
-import { listStores, type StoreProfile } from '../lib/stores'
+import { cartService } from '../lib/services/cartService'
+import { storeService } from '../lib/services/storeService'
 import { API_BASE_URL } from '../lib/api'
-import type { CartItem, CartResponse } from '../lib/types'
+import type { StoreProfile } from '../lib/types'
+import { Cart, CartItem } from '../lib/models'
 
 export default function CartPage() {
   const { token, user } = useAuth()
   const navigate = useNavigate()
 
-  const [cart, setCart] = useState<CartResponse | null>(null)
+  const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stores, setStores] = useState<Record<number, StoreProfile>>({})
@@ -26,8 +27,8 @@ export default function CartPage() {
   const loadCart = async () => {
     setLoading(true)
     try {
-      const data = await getCart(token!)
-      setCart(data)
+      const data = await cartService.getCart(token!)
+      setCart(Cart.fromDto(data))
 
       // Resolve store names
       const storeIds = Array.from(new Set(data.items.map(i => i.product.store_id)))
@@ -48,7 +49,7 @@ export default function CartPage() {
     try {
       // Since we don't have a bulk-get-by-id, we'll try to find them in the stores list
       // Or just fetch all stores (Marketplace typically doesn't have thousands in one cart context)
-      const res = await listStores({ limit: 100 })
+      const res = await storeService.listStores({ limit: 100 })
       const storeMap = { ...stores }
       res.items.forEach(s => {
         if (storeIds.includes(s.id)) {
@@ -95,8 +96,8 @@ export default function CartPage() {
     if (typeof item.product.stock === 'number' && newQty > item.product.stock) return
 
     try {
-      const updatedCart = await updateCartItem(token, item.id, newQty)
-      setCart(updatedCart)
+      const updatedCart = await cartService.updateItem(token, item.id, newQty)
+      setCart(Cart.fromDto(updatedCart))
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Update failed')
     }
@@ -105,8 +106,8 @@ export default function CartPage() {
   const handleDelete = async (id: number) => {
     if (!token || !confirm('Remove this item from your cart?')) return
     try {
-      const updatedCart = await removeCartItem(token, id)
-      setCart(updatedCart)
+      const updatedCart = await cartService.removeItem(token, id)
+      setCart(Cart.fromDto(updatedCart))
       setSelectedItemIds(prev => prev.filter(i => i !== id))
     } catch (err) {
       alert('Delete failed')
@@ -160,7 +161,7 @@ export default function CartPage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
         <h1 style={{ margin: 0, fontSize: '2.25rem' }}>Shopping Cart</h1>
         {cart && cart.items.length > 0 && (
-          <span style={{ color: 'var(--text-muted)', fontSize: '1.25rem', marginTop: '0.5rem' }}>{cart.total_items} items</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '1.25rem', marginTop: '0.5rem' }}>{cart.itemCount()} items</span>
         )}
       </div>
 
@@ -308,7 +309,7 @@ export default function CartPage() {
                     </div>
 
                     <div style={{ textAlign: 'center', fontWeight: 700, color: 'var(--primary)', fontSize: '1.1rem' }}>
-                      ฿{(Number(item.product.price) * item.quantity).toLocaleString()}
+                      ฿{item.lineTotal().toLocaleString()}
                     </div>
 
                     <button

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { login } from '../lib/auth'
+import { authService } from '../lib/services/authService'
 import { useAuth } from '../auth/AuthContext'
 
 export default function LoginPage() {
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setSubmitting(true)
 
     try {
-      const res = await login(email, password)
+      const res = await authService.login(email, password)
       setToken(res.access_token)
       await refreshMe(res.access_token)
       const destination =

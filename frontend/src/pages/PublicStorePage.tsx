@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getStoreProfile, getStoreGroups, getStoreProducts } from '../lib/stores'
-import { getStoreRatings } from '../lib/ratings'
-import type { StoreProfile, PublicStoreGroup, PublicStoreProduct } from '../lib/stores'
-import type { StoreSummaryRating } from '../lib/types'
+import { storeService } from '../lib/services/storeService'
+import { ratingService } from '../lib/services/ratingService'
+import type { StoreProfile, ProductGroup, SellerProduct, StoreSummaryRating } from '../lib/types'
 import { ApiError, API_BASE_URL } from '../lib/api'
 
 // ── Product card (rectangular) ────────────────────────────────────────────────
 
-function ProductCard({ product }: { product: PublicStoreProduct }) {
+function ProductCard({ product }: { product: SellerProduct }) {
   const thumbnail = product.images?.[0]?.image_url
   const isSold = product.status === 'sold'
 
@@ -53,7 +52,7 @@ function ProductSection({
   products,
 }: {
   title: string
-  products: PublicStoreProduct[]
+  products: SellerProduct[]
 }) {
   if (products.length === 0) return null
 
@@ -115,8 +114,8 @@ export default function PublicStorePage() {
   const { slug } = useParams<{ slug: string }>()
 
   const [store, setStore] = useState<StoreProfile | null>(null)
-  const [groups, setGroups] = useState<PublicStoreGroup[]>([])
-  const [products, setProducts] = useState<PublicStoreProduct[]>([])
+  const [groups, setGroups] = useState<ProductGroup[]>([])
+  const [products, setProducts] = useState<SellerProduct[]>([])
   const [ratings, setRatings] = useState<StoreSummaryRating | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -135,9 +134,9 @@ export default function PublicStorePage() {
 
       try {
         const [storeData, groupsData, productsData] = await Promise.all([
-          getStoreProfile(slug!),
-          getStoreGroups(slug!),
-          getStoreProducts(slug!, { limit: 100 }),
+          storeService.getProfile(slug!),
+          storeService.getGroups(slug!),
+          storeService.getProducts(slug!, { limit: 100 }),
         ])
 
         if (cancelled) return
@@ -146,8 +145,7 @@ export default function PublicStorePage() {
         setGroups(groupsData)
         setProducts(productsData.products)
 
-        // Fetch ratings separately after store ID is known
-        const ratingsData = await getStoreRatings(storeData.id)
+        const ratingsData = await ratingService.getStoreRatings(storeData.id)
         if (!cancelled) setRatings(ratingsData)
       } catch (err) {
         if (cancelled) return
@@ -224,8 +222,8 @@ export default function PublicStorePage() {
 
   // ── Build grouped sections client-side ───────────────────────────────────────
 
-  const groupedProducts: Record<number, PublicStoreProduct[]> = {}
-  const ungroupedProducts: PublicStoreProduct[] = []
+  const groupedProducts: Record<number, SellerProduct[]> = {}
+  const ungroupedProducts: SellerProduct[] = []
 
   for (const p of products) {
     if (p.group_id != null) {

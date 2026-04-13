@@ -22,8 +22,8 @@ import CheckoutPage from './pages/CheckoutPage'
 import OrderSuccessPage from './pages/OrderSuccessPage'
 import OrdersPage from './pages/OrdersPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
-import { listStores } from './lib/stores'
-import type { StoreProfile } from './lib/stores'
+import { storeService } from './lib/services/storeService'
+import type { StoreProfile } from './lib/types'
 
 // Global search context
 type SearchContextType = {
@@ -107,7 +107,7 @@ function HomePage() {
   const [storesLoading, setStoresLoading] = useState(true)
 
   useEffect(() => {
-    listStores({ limit: 6 })
+    storeService.listStores({ limit: 6 })
       .then((res) => setFeaturedStores(res.items))
       .catch(() => {})
       .finally(() => setStoresLoading(false))

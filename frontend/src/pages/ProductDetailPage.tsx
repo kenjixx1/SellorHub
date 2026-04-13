@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getProduct } from '../lib/marketplace'
-import { listStores, type StoreProfile } from '../lib/stores'
-import { getStoreRatings } from '../lib/ratings'
-import type { PublicProduct } from '../lib/marketplace'
-import { apiFetch } from '../lib/api'
+import type { PublicProduct, StoreProfile } from '../lib/types'
+import { productService } from '../lib/services/productService'
+import { storeService } from '../lib/services/storeService'
+import { ratingService } from '../lib/services/ratingService'
+import { cartService } from '../lib/services/cartService'
+import { inquiryService } from '../lib/services/inquiryService'
 import { useAuth } from '../auth/AuthContext'
-import { addToCart } from '../lib/cart'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -36,13 +36,13 @@ export default function ProductDetailPage() {
       if (!id) return
       setLoading(true)
       try {
-        const data = await getProduct(parseInt(id))
+        const data = await productService.getById(parseInt(id))
         setProduct(data)
 
         // Fetch store info and rating in parallel
         const [allStores, ratingData] = await Promise.all([
-          listStores(),
-          getStoreRatings(data.store_id)
+          storeService.listStores(),
+          ratingService.getStoreRatings(data.store_id)
         ])
 
         const foundStore = allStores.items.find((s: StoreProfile) => s.id === data.store_id)
@@ -64,15 +64,11 @@ export default function ProductDetailPage() {
 
     setInquiryLoading(true)
     try {
-      await apiFetch('/api/inquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product_id: product.id,
-          buyer_name: inquiryName,
-          buyer_email: inquiryEmail,
-          message: inquiryMessage,
-        }),
+      await inquiryService.create({
+        product_id: product.id,
+        buyer_name: inquiryName,
+        buyer_email: inquiryEmail,
+        message: inquiryMessage,
       })
       setInquirySuccess(true)
       setInquiryMessage('')
@@ -92,7 +88,7 @@ export default function ProductDetailPage() {
 
     setCartLoading(true)
     try {
-      await addToCart(token, product.id, buyQuantity)
+      await cartService.addToCart(token, product.id, buyQuantity)
       setCartSuccess(true)
       setTimeout(() => setCartSuccess(false), 3000)
     } catch (err) {

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { listMyOrders, updateOrderStatus } from '../lib/orders'
-import { listStores, type StoreProfile } from '../lib/stores'
-import { createRating } from '../lib/ratings'
-import type { OrderResponse } from '../lib/types'
+import { orderService } from '../lib/services/orderService'
+import { storeService } from '../lib/services/storeService'
+import { ratingService } from '../lib/services/ratingService'
+import type { StoreProfile } from '../lib/types'
+import { Order } from '../lib/models'
 
 const STATUS_TABS = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered', 'cancelled']
 
@@ -22,13 +23,13 @@ export default function OrdersPage() {
   const { token, user } = useAuth()
   const navigate = useNavigate()
 
-  const [orders, setOrders] = useState<OrderResponse[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [stores, setStores] = useState<Record<number, StoreProfile>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('all')
   const [confirmingId, setConfirmingId] = useState<number | null>(null)
-  const [ratingOrder, setRatingOrder] = useState<OrderResponse | null>(null)
+  const [ratingOrder, setRatingOrder] = useState<Order | null>(null)
   const [ratingScore, setRatingScore] = useState(5)
   const [ratingComment, setRatingComment] = useState('')
   const [submittingRating, setSubmittingRating] = useState(false)
@@ -42,11 +43,11 @@ export default function OrdersPage() {
     setLoading(true)
     try {
       const [orderList, allStores] = await Promise.all([
-        listMyOrders(token!),
-        listStores()
+        orderService.listMyOrders(token!),
+        storeService.listStores()
       ])
 
-      setOrders(orderList.items)
+      setOrders(orderList.items.map(Order.fromDto))
 
       const storeMap = allStores.items.reduce((acc: any, s: StoreProfile) => {
         acc[s.id] = s
@@ -65,7 +66,7 @@ export default function OrdersPage() {
     if (!token) return
     setConfirmingId(orderId)
     try {
-      await updateOrderStatus(token, orderId, 'delivered')
+      await orderService.updateStatus(token, orderId, 'delivered')
       await loadData()
     } catch (err: any) {
       alert(err?.message ?? 'Failed to confirm receipt')
@@ -78,7 +79,7 @@ export default function OrdersPage() {
     if (!token || !ratingOrder) return
     setSubmittingRating(true)
     try {
-      await createRating(token, {
+      await ratingService.create(token, {
         store_id: ratingOrder.store_id,
         score: ratingScore,
         comment: ratingComment,
@@ -265,7 +266,7 @@ export default function OrdersPage() {
                   gap: '1rem'
                 }}>
                   <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Order Total:</span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>฿{Number(order.total_amount).toLocaleString()}</span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>฿{order.formattedTotal()}</span>
                 </div>
 
                 {/* CTA footer */}

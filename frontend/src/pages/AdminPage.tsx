@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import {
-  getAdminStats,
-  getAdminUsers,
-  getPendingSellers,
-  approveSeller,
-} from '../lib/admin'
-import type { AdminStats, AdminUser, GetUsersFilters } from '../lib/admin'
+import { adminService } from '../lib/services/adminService'
+import type { AdminStats, AdminUser, GetUsersFilters } from '../lib/services/adminService'
 
 // ── Stat card ────────────────────────────────────────────────────────────────
 
@@ -102,7 +97,7 @@ export default function AdminPage() {
   // Fetch stats
   const fetchStats = async () => {
     try {
-      const data = await getAdminStats(activeToken)
+      const data = await adminService.getStats(activeToken)
       setStats(data)
       setStatsError(null)
     } catch (err: any) {
@@ -117,7 +112,7 @@ export default function AdminPage() {
       const filters: GetUsersFilters = {}
       if (roleFilter) filters.role = roleFilter
       if (search.trim()) filters.search = search.trim()
-      const data = await getAdminUsers(activeToken, filters)
+      const data = await adminService.getUsers(activeToken, filters)
       setUsers(data)
       setUsersError(null)
     } catch (err: any) {
@@ -131,7 +126,7 @@ export default function AdminPage() {
   const fetchPending = async () => {
     setPendingLoading(true)
     try {
-      const data = await getPendingSellers(activeToken)
+      const data = await adminService.getPendingSellers(activeToken)
       setPendingSellers(data)
       setPendingError(null)
     } catch (err: any) {
@@ -155,7 +150,7 @@ export default function AdminPage() {
     setApprovalLoading(userId)
     setApprovalMsg(null)
     try {
-      await approveSeller(activeToken, userId, approve)
+      await adminService.approveSeller(activeToken, userId, approve)
       setApprovalMsg(approve ? 'Seller approved.' : 'Seller rejected.')
       await Promise.all([fetchPending(), fetchStats(), fetchUsers()])
     } catch (err: any) {

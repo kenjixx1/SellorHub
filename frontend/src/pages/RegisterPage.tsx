@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { register } from '../lib/auth'
+import { authService } from '../lib/services/authService'
 
 export default function RegisterPage() {
   const nav = useNavigate()
@@ -42,7 +42,7 @@ export default function RegisterPage() {
     setSubmitting(true)
 
     try {
-      await register(username, email, password, role, phone)
+      await authService.register(username, email, password, role, phone)
       nav('/login')
     } catch (err: any) {
       setError(err?.message ?? 'Registration failed')

@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import {
-  getMyProductGroups,
-  getProduct,
-  updateProduct,
-  type ProductGroup,
-  type ProductStatus
-} from '../lib/seller'
+import { sellerService } from '../lib/services/sellerService'
+import { productService } from '../lib/services/productService'
+import type { ProductGroup, ProductStatus } from '../lib/types'
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>()
@@ -33,11 +29,11 @@ export default function EditProductPage() {
     
     async function init() {
       try {
-        const productGroups = await getMyProductGroups(activeToken)
+        const productGroups = await sellerService.getMyProductGroups(activeToken)
         setGroups(productGroups)
 
         if (id) {
-           const p = await getProduct(Number(id))
+           const p = await productService.getById(Number(id))
            setTitle(p.title)
            setPrice(String(p.price))
            setDescription(p.description || '')
@@ -72,7 +68,7 @@ export default function EditProductPage() {
       const valGroupId = groupId ? Number(groupId) : null
       const valStock = stock ? Number(stock) : null
       
-      await updateProduct(activeToken, Number(id), {
+      await productService.update(activeToken, Number(id), {
         title,
         price: Number(price),
         description: description || null,

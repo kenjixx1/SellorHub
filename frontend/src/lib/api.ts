@@ -12,62 +12,6 @@ export class ApiError extends Error {
   }
 }
 
-function buildUrl(path: string) {
-  if (API_BASE_URL) return `${API_BASE_URL}${path}`
-  return path
-}
-
-export async function apiFetch<T>(
-  path: string,
-  options: RequestInit & { token?: string | null } = {},
-): Promise<T> {
-  const { token, headers, ...rest } = options
-
-  const res = await fetch(buildUrl(path), {
-    ...rest,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(headers ?? {}),
-    },
-  })
-
-  const contentType = res.headers.get('content-type') ?? ''
-  const isJson = contentType.includes('application/json')
-  const body = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null)
-
-  if (!res.ok) {
-    const msg = formatErrorMessage(isJson, body, res.statusText)
-    throw new ApiError(msg, res.status, body)
-  }
-
-  return body as T
-}
-
-/** Upload a file via multipart/form-data. Browser sets Content-Type + boundary automatically. */
-export async function apiUpload<T>(
-  path: string,
-  formData: FormData,
-  token?: string | null,
-): Promise<T> {
-  const res = await fetch(buildUrl(path), {
-    method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: formData,
-  })
-
-  const contentType = res.headers.get('content-type') ?? ''
-  const isJson = contentType.includes('application/json')
-  const body = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null)
-
-  if (!res.ok) {
-    const msg = formatErrorMessage(isJson, body, res.statusText)
-    throw new ApiError(msg, res.status, body)
-  }
-
-  return body as T
-}
-
-/** Turn FastAPI `detail` (string | object | array) into a readable message. */
 function formatErrorMessage(isJson: boolean, body: unknown, statusText: string): string {
   if (!isJson || !body || typeof body !== 'object') {
     return statusText || 'Request failed'
@@ -98,3 +42,57 @@ function formatErrorMessage(isJson: boolean, body: unknown, statusText: string):
   return String(detail)
 }
 
+export class ApiClient {
+  private buildUrl(path: string) {
+    if (API_BASE_URL) return `${API_BASE_URL}${path}`
+    return path
+  }
+
+  async fetch<T>(path: string, options: RequestInit & { token?: string | null } = {}): Promise<T> {
+    const { token, headers, ...rest } = options
+
+    const res = await fetch(this.buildUrl(path), {
+      ...rest,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(headers ?? {}),
+      },
+    })
+
+    const contentType = res.headers.get('content-type') ?? ''
+    const isJson = contentType.includes('application/json')
+    const body = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null)
+
+    if (!res.ok) {
+      const msg = formatErrorMessage(isJson, body, res.statusText)
+      throw new ApiError(msg, res.status, body)
+    }
+
+    return body as T
+  }
+
+  async upload<T>(path: string, formData: FormData, token?: string | null): Promise<T> {
+    const res = await fetch(this.buildUrl(path), {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    })
+
+    const contentType = res.headers.get('content-type') ?? ''
+    const isJson = contentType.includes('application/json')
+    const body = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null)
+
+    if (!res.ok) {
+      const msg = formatErrorMessage(isJson, body, res.statusText)
+      throw new ApiError(msg, res.status, body)
+    }
+
+    return body as T
+  }
+}
+
+export const apiClient = new ApiClient()
+
+// Temporary aliases for migration
+export const apiFetch = apiClient.fetch.bind(apiClient)
+export const apiUpload = apiClient.upload.bind(apiClient)

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { getSellerDashboard } from '../lib/seller'
-import { createStore, updateStore, getStoreProfile } from '../lib/stores'
+import { sellerService } from '../lib/services/sellerService'
+import { storeService } from '../lib/services/storeService'
 import { ApiError } from '../lib/api'
 
 export default function StoreSettingsPage() {
@@ -32,9 +32,9 @@ export default function StoreSettingsPage() {
 
     async function init() {
       try {
-        const dashboard = await getSellerDashboard(activeToken)
+        const dashboard = await sellerService.getDashboard(activeToken)
         // Store exists! Fetch full profile
-        const profile = await getStoreProfile(dashboard.store.slug)
+        const profile = await storeService.getProfile(dashboard.store.slug)
         setIsEdit(true)
         setName(profile.name)
         setSlug(profile.slug)
@@ -85,13 +85,13 @@ export default function StoreSettingsPage() {
     setSubmitting(true)
     try {
       if (isEdit) {
-        await updateStore(activeToken, {
+        await storeService.update(activeToken, {
           name,
           description: description || undefined,
           logo_url: logoUrl || undefined,
         })
       } else {
-        await createStore(activeToken, {
+        await storeService.create(activeToken, {
           name,
           slug,
           description: description || undefined,

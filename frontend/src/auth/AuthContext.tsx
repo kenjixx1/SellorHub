@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import type { User } from '../lib/auth'
-import { me } from '../lib/auth'
+import { User } from '../lib/models/User'
+import { authService } from '../lib/services/authService'
 
 type AuthState = {
   token: string | null
@@ -38,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
     try {
-      const u = await me(activeToken)
-      setUser(u)
+      const u = await authService.me(activeToken)
+      setUser(User.fromDto(u))
     } catch {
       // token invalid/expired or server mismatch
       logout()

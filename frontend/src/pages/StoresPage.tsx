@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { listStores } from '../lib/stores'
-import type { StoreProfile } from '../lib/stores'
+import { storeService } from '../lib/services/storeService'
+import type { StoreProfile } from '../lib/types'
 
 const PAGE_SIZE = 20
 
@@ -117,7 +117,7 @@ export default function StoresPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await listStores({ search: debouncedSearch || undefined, page, limit: PAGE_SIZE })
+      const res = await storeService.listStores({ search: debouncedSearch || undefined, page, limit: PAGE_SIZE })
       setStores(res.items)
       setTotal(res.total)
       setTotalPages(res.pages)

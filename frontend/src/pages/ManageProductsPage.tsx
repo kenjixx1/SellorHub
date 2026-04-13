@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { getSellerProducts, deleteProduct, getMyProductGroups } from '../lib/seller'
-import type { SellerProduct, ProductGroup } from '../lib/seller'
+import { sellerService } from '../lib/services/sellerService'
+import { productService } from '../lib/services/productService'
+import type { SellerProduct, ProductGroup } from '../lib/types'
 
 export default function ManageProductsPage() {
   const { user, token, loading: authLoading } = useAuth()
@@ -17,9 +18,9 @@ export default function ManageProductsPage() {
     setLoading(true)
     setError(null)
     try {
-      const g = await getMyProductGroups(activeToken)
+      const g = await sellerService.getMyProductGroups(activeToken)
       setGroups(g)
-      const p = await getSellerProducts(activeToken, { limit: 100 })
+      const p = await productService.getSellerProducts(activeToken, { limit: 100 })
       setProducts(p.products)
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load products')
@@ -40,7 +41,7 @@ export default function ManageProductsPage() {
     if (!window.confirm(`Are you sure you want to permanently delete "${title}"?`)) return
     
     try {
-      await deleteProduct(activeToken, id)
+      await productService.delete(activeToken, id)
       setProducts(prev => prev.filter(p => p.id !== id))
     } catch (err: any) {
       alert(err?.message ?? 'Failed to delete product')

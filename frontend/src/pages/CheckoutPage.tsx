@@ -1,20 +1,21 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { getCart } from '../lib/cart'
-import { getAddresses } from '../lib/addresses'
-import { createOrderDirect, createOrderFromCart } from '../lib/orders'
-import { listStores, type StoreProfile } from '../lib/stores'
+import { cartService } from '../lib/services/cartService'
+import { addressService } from '../lib/services/addressService'
+import { orderService } from '../lib/services/orderService'
+import { storeService } from '../lib/services/storeService'
 import { API_BASE_URL } from '../lib/api'
-import type { AddressResponse } from '../lib/types'
+import type { StoreProfile } from '../lib/types'
+import { Address } from '../lib/models'
 
 export default function CheckoutPage() {
   const { token } = useAuth()
   const navigate = useNavigate()
 
-  const [addresses, setAddressResponsees] = useState<AddressResponse[]>([])
-  const [selectedAddressResponse, setSelectedAddressResponse] = useState<AddressResponse | null>(null)
-  const [isChangingAddressResponse, setIsChangingAddressResponse] = useState(false)
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null)
+  const [isChangingAddress, setIsChangingAddress] = useState(false)
   
   const [items, setItems] = useState<any[]>([]) // CartItem[] or DirectCheckoutItem[]
   const [stores, setStores] = useState<Record<number, StoreProfile>>({})
@@ -34,9 +35,10 @@ export default function CheckoutPage() {
     setLoading(true)
     try {
       // 1. Load AddressResponsees
-      const addrList = await getAddresses(token!)
-      setAddressResponsees(addrList)
-      setSelectedAddressResponse(addrList.find(a => a.is_default) || addrList[0] || null)
+      const addrList = await addressService.getAll(token!)
+      const addrModels = addrList.map(Address.fromDto)
+      setAddresses(addrModels)
+      setSelectedAddress(addrModels.find(a => a.isDefault()) || addrModels[0] || null)
 
       // 2. Load Checkout Items
       const buyNowStr = sessionStorage.getItem('buy_now_item')
@@ -47,7 +49,7 @@ export default function CheckoutPage() {
         checkoutItems = [JSON.parse(buyNowStr)]
       } else if (cartIdsStr) {
         const cartIds = JSON.parse(cartIdsStr) as number[]
-        const cartData = await getCart(token!)
+        const cartData = await cartService.getCart(token!)
         checkoutItems = cartData.items.filter(i => cartIds.includes(i.id))
       } else {
         // No items to checkout, go back to cart
@@ -58,7 +60,7 @@ export default function CheckoutPage() {
 
       // 3. Resolve Store Metadata
       const storeIds = Array.from(new Set(checkoutItems.map(i => i.product.store_id)))
-      const storeList = await listStores({ limit: 100 })
+      const storeList = await storeService.listStores({ limit: 100 })
       const storeMap: Record<number, StoreProfile> = {}
       storeList.items.forEach(s => {
         if (storeIds.includes(s.id)) storeMap[s.id] = s
@@ -91,7 +93,7 @@ export default function CheckoutPage() {
   const totalAmount = subtotal + totalShipping
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddressResponse) {
+    if (!selectedAddress) {
       alert('Please select a shipping address.')
       return
     }
@@ -102,16 +104,16 @@ export default function CheckoutPage() {
       const orderPromises = groupedItems.map(group => {
         const isDirect = sessionStorage.getItem('buy_now_item') !== null
         if (isDirect) {
-          return createOrderDirect(
+          return orderService.createDirect(
             token!, 
             group.storeId, 
             group.items.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
-            selectedAddressResponse.id
+            selectedAddress.id
           )
         } else {
           // Note: Backend might not support partial cart checkout per store easily if items are not exactly the same.
           // However, the common pattern is order-per-store.
-          return createOrderFromCart(token!, group.storeId, selectedAddressResponse.id)
+          return orderService.createFromCart(token!, group.storeId, selectedAddress.id)
         }
       })
 
@@ -169,15 +171,15 @@ export default function CheckoutPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Delivery AddressResponse
+                  Delivery Address
                </h3>
-               <button onClick={() => setIsChangingAddressResponse(!isChangingAddressResponse)} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}>
-                  {isChangingAddressResponse ? 'Cancel' : 'Change'}
+               <button onClick={() => setIsChangingAddress(!isChangingAddress)} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}>
+                  {isChangingAddress ? 'Cancel' : 'Change'}
                </button>
             </div>
             
             <div style={{ padding: '1.5rem' }}>
-              {isChangingAddressResponse ? (
+              {isChangingAddress ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {addresses.length === 0 ? (
                     <p>No addresses found. <Link to="/profile" style={{ color: 'var(--primary)' }}>Add one in your profile.</Link></p>
@@ -185,12 +187,12 @@ export default function CheckoutPage() {
                     addresses.map(addr => (
                       <button 
                         key={addr.id}
-                        onClick={() => { setSelectedAddressResponse(addr); setIsChangingAddressResponse(false); }}
+                        onClick={() => { setSelectedAddress(addr); setIsChangingAddress(false); }}
                         style={{ 
                           textAlign: 'left', 
                           padding: '1rem', 
                           borderRadius: '8px', 
-                          border: selectedAddressResponse?.id === addr.id ? '2px solid var(--primary)' : '1px solid var(--border)',
+                          border: selectedAddress?.id === addr.id ? '2px solid var(--primary)' : '1px solid var(--border)',
                           background: 'rgba(0,0,0,0.2)',
                           cursor: 'pointer'
                         }}
@@ -202,16 +204,15 @@ export default function CheckoutPage() {
                     ))
                   )}
                 </div>
-              ) : selectedAddressResponse ? (
+              ) : selectedAddress ? (
                 <div>
                   <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-                    <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{selectedAddressResponse.recipient_name}</span>
-                    <span style={{ color: 'var(--text-muted)' }}>{selectedAddressResponse.phone}</span>
-                    {selectedAddressResponse.is_default && <span style={{ fontSize: '0.75rem', background: 'var(--primary)', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>Default</span>}
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{selectedAddress.recipient_name}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{selectedAddress.phone}</span>
+                    {selectedAddress.isDefault() && <span style={{ fontSize: '0.75rem', background: 'var(--primary)', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>Default</span>}
                   </div>
                   <div style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                    {selectedAddressResponse.address_line1} {selectedAddressResponse.address_line2},<br />
-                    {selectedAddressResponse.city}, {selectedAddressResponse.province} {selectedAddressResponse.postal_code}
+                    {selectedAddress.oneLine()}
                   </div>
                 </div>
               ) : (
@@ -319,7 +320,7 @@ export default function CheckoutPage() {
                className="btn-primary" 
                style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', fontWeight: 800, borderRadius: '8px' }}
                onClick={handlePlaceOrder}
-               disabled={placingOrder || !selectedAddressResponse}
+               disabled={placingOrder || !selectedAddress}
              >
                {placingOrder ? 'Processing...' : 'Place Order'}
              </button>

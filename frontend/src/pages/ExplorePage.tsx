@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getPublicProducts } from '../lib/marketplace'
-import { listStores, type StoreProfile } from '../lib/stores'
-import { getStoreRatings } from '../lib/ratings'
-import type { PublicProduct } from '../lib/marketplace'
+import { productService } from '../lib/services/productService'
+import { storeService } from '../lib/services/storeService'
+import { ratingService } from '../lib/services/ratingService'
+import type { PublicProduct, StoreProfile } from '../lib/types'
 import { useSearch } from '../main'
 
 export default function ExplorePage() {
@@ -28,8 +28,8 @@ export default function ExplorePage() {
       setLoading(true)
       try {
         const [productData, storeData] = await Promise.all([
-          getPublicProducts({ search: debouncedSearch }),
-          listStores()
+          productService.getPublicProducts({ search: debouncedSearch }),
+          storeService.listStores()
         ])
         
         const productItems = productData.items || (productData as any).products || []
@@ -46,7 +46,7 @@ export default function ExplorePage() {
         const ratingsResults = await Promise.all(
           uniqueStoreIds.map(async (sid: any) => {
              try {
-                const r = await getStoreRatings(sid)
+                const r = await ratingService.getStoreRatings(sid)
                 return { id: sid, score: r.average_score, count: r.total_ratings }
              } catch {
                 return { id: sid, score: 0, count: 0 }

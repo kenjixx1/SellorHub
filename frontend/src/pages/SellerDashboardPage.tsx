@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import {
-  getSellerDashboard,
-  getSellerProducts,
-  getMyProductGroups,
-} from '../lib/seller'
-import type { SellerDashboard, SellerProduct, ProductGroup } from '../lib/seller'
+import { sellerService } from '../lib/services/sellerService'
+import { productService } from '../lib/services/productService'
+import { orderService } from '../lib/services/orderService'
+import type { SellerDashboard, SellerProduct, ProductGroup, OrderResponse } from '../lib/types'
 import { ApiError } from '../lib/api'
-import { listStoreOrders } from '../lib/orders'
-import type { OrderResponse } from '../lib/types'
 
 // ── Tiny helpers ──────────────────────────────────────────────────────────────
 
@@ -128,7 +124,7 @@ export default function SellerDashboardPage() {
 
   const fetchDashboard = async () => {
     try {
-      const data = await getSellerDashboard(activeToken)
+      const data = await sellerService.getDashboard(activeToken)
       setDashboard(data)
       setDashboardError(null)
       setNoStore(false)
@@ -145,7 +141,7 @@ export default function SellerDashboardPage() {
   const fetchProducts = async () => {
     setProductsLoading(true)
     try {
-      const data = await getSellerProducts(activeToken, { limit: 5 })
+      const data = await productService.getSellerProducts(activeToken, { limit: 5 })
       setProducts(data.products)
       setProductsError(null)
     } catch (err: any) {
@@ -157,7 +153,7 @@ export default function SellerDashboardPage() {
 
   const fetchGroups = async () => {
     try {
-      const data = await getMyProductGroups(activeToken)
+      const data = await sellerService.getMyProductGroups(activeToken)
       setGroups(data)
       setGroupsError(null)
     } catch (err: any) {
@@ -168,7 +164,7 @@ export default function SellerDashboardPage() {
   const fetchOrders = async () => {
     setOrdersLoading(true)
     try {
-      const data = await listStoreOrders(activeToken, undefined, 1, 5)
+      const data = await orderService.listStoreOrders(activeToken, undefined, 1, 5)
       setOrders(data.items)
       setOrdersError(null)
     } catch (err: any) {
