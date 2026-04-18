@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { storeService } from '../lib/services/storeService'
-import type { StoreProfile } from '../lib/types'
+import { Store } from '../lib/models/Store'
 
 const PAGE_SIZE = 20
 
@@ -47,7 +47,7 @@ function StoreAvatar({ name, logoUrl, size = 56 }: { name: string; logoUrl?: str
 
 // ── Store card ────────────────────────────────────────────────────────────────
 
-function StoreCard({ store }: { store: StoreProfile }) {
+function StoreCard({ store }: { store: Store }) {
   return (
     <Link to={`/store/${store.slug}`} className="dir-store-card">
       <StoreAvatar name={store.name} logoUrl={store.logo_url} size={56} />
@@ -95,7 +95,7 @@ function SkeletonStoreCard() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function StoresPage() {
-  const [stores, setStores] = useState<StoreProfile[]>([])
+  const [stores, setStores] = useState<Store[]>([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -118,7 +118,7 @@ export default function StoresPage() {
     setError(null)
     try {
       const res = await storeService.listStores({ search: debouncedSearch || undefined, page, limit: PAGE_SIZE })
-      setStores(res.items)
+      setStores(res.items.map(Store.fromDto))
       setTotal(res.total)
       setTotalPages(res.pages)
     } catch (err) {

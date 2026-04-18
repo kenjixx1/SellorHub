@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import type { PublicProduct, StoreProfile } from '../lib/types'
 import { productService } from '../lib/services/productService'
 import { storeService } from '../lib/services/storeService'
 import { ratingService } from '../lib/services/ratingService'
 import { cartService } from '../lib/services/cartService'
 import { inquiryService } from '../lib/services/inquiryService'
+import { Product } from '../lib/models/Product'
+import { Store } from '../lib/models/Store'
 import { useAuth } from '../auth/AuthContext'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [product, setProduct] = useState<PublicProduct | null>(null)
+  const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [store, setStore] = useState<StoreProfile | null>(null)
+  const [store, setStore] = useState<Store | null>(null)
   const [storeRating, setStoreRating] = useState<{ score: number; count: number } | null>(null)
   const [activeImage, setActiveImage] = useState(0)
 
@@ -37,7 +38,7 @@ export default function ProductDetailPage() {
       setLoading(true)
       try {
         const data = await productService.getById(parseInt(id))
-        setProduct(data)
+        setProduct(Product.fromDto(data))
 
         // Fetch store info and rating in parallel
         const [allStores, ratingData] = await Promise.all([
@@ -45,8 +46,8 @@ export default function ProductDetailPage() {
           ratingService.getStoreRatings(data.store_id)
         ])
 
-        const foundStore = allStores.items.find((s: StoreProfile) => s.id === data.store_id)
-        if (foundStore) setStore(foundStore)
+        const foundStore = allStores.items.find((s) => s.id === data.store_id)
+        if (foundStore) setStore(Store.fromDto(foundStore))
         setStoreRating({ score: ratingData.average_score || 0, count: ratingData.total_ratings })
 
       } catch (err) {
@@ -204,7 +205,7 @@ export default function ProductDetailPage() {
               )}
             </div>
             <div className="price-tag" style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text)' }}>
-              ฿{parseFloat(product.price).toLocaleString()}
+              ฿{product.formattedPrice()}
               <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '400', marginLeft: '0.5rem' }}>tax included</span>
             </div>
           </div>

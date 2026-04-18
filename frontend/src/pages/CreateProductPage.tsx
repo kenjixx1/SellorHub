@@ -3,7 +3,8 @@ import { Navigate, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { sellerService } from '../lib/services/sellerService'
 import { productService } from '../lib/services/productService'
-import type { ProductGroup, ProductStatus } from '../lib/types'
+import type { ProductStatus } from '../lib/types'
+import { ProductGroup } from '../lib/models/ProductGroup'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -59,7 +60,7 @@ export default function CreateProductPage() {
     async function loadGroups() {
       try {
         const data = await sellerService.getMyProductGroups(activeToken)
-        setGroups(data)
+        setGroups(data.map(ProductGroup.fromDto))
       } catch (err) {
         // Soft error, just log. The select will just be empty.
         console.error('Failed to load groups', err)
@@ -325,7 +326,7 @@ export default function CreateProductPage() {
                     setCreatingGroup(true)
                     try {
                       const created = await sellerService.createProductGroup(activeToken, newGroupName.trim())
-                      setGroups(prev => [...prev, created])
+                      setGroups(prev => [...prev, ProductGroup.fromDto(created)])
                       setGroupId(String(created.id))
                       setIsCreatingGroup(false)
                       setNewGroupName('')

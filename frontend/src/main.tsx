@@ -1,4 +1,4 @@
-import { StrictMode, createContext, useContext, useState, useEffect } from 'react'
+import { StrictMode, createContext, useContext, useState, useEffect, useRef } from 'react'
 import { API_BASE_URL } from './lib/api'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Link, Route, Routes, useNavigate, useLocation } from 'react-router-dom'
@@ -23,13 +23,17 @@ import OrderSuccessPage from './pages/OrderSuccessPage'
 import OrdersPage from './pages/OrdersPage'
 import ManageCategoriesPage from './pages/ManageCategoriesPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
-import { storeService } from './lib/services/storeService'
-import type { StoreProfile } from './lib/types'
 
 // Global search context
 type SearchContextType = {
   searchQuery: string
   setSearchQuery: (q: string) => void
+  sortBy: string
+  setSortBy: (s: string) => void
+  minPrice: string
+  setMinPrice: (p: string) => void
+  maxPrice: string
+  setMaxPrice: (p: string) => void
 }
 const SearchContext = createContext<SearchContextType | undefined>(undefined)
 
@@ -53,133 +57,51 @@ createRoot(document.getElementById('root')!).render(
 
 function SearchProvider({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState('newest')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+
   return (
-    <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+    <SearchContext.Provider value={{ 
+      searchQuery, setSearchQuery,
+      sortBy, setSortBy,
+      minPrice, setMinPrice,
+      maxPrice, setMaxPrice
+    }}>
       {children}
     </SearchContext.Provider>
   )
 }
 
-function HomeStoreCard({ store }: { store: StoreProfile }) {
+function HomePage() {
+  const { user } = useAuth()
+
   return (
-    <Link to={`/store/${store.slug}`} className="dir-store-card">
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: '0.75rem',
-          background: store.logo_url
-            ? undefined
-            : 'linear-gradient(135deg, #818cf8, #c084fc)',
-          backgroundImage: store.logo_url ? `url(${store.logo_url})` : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '1.2rem',
-          fontWeight: 800,
-          color: 'white',
-          flexShrink: 0,
-          border: '1px solid var(--border)',
-        }}
-      >
-        {!store.logo_url && store.name.charAt(0).toUpperCase()}
-      </div>
-      <div className="dir-store-card-body">
-        <h3 className="dir-store-card-name">{store.name}</h3>
-        {store.description && (
-          <p className="dir-store-card-desc">{store.description}</p>
-        )}
-        <div className="dir-store-card-meta">
-          {store.product_count != null && (
-            <span>{store.product_count} product{store.product_count !== 1 ? 's' : ''}</span>
+    <div className="hero" style={{ justifyContent: 'center', textAlign: 'center', flexDirection: 'column' }}>
+      <div className="hero-content" style={{ margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <h1 style={{ fontSize: '4.5rem', marginBottom: '1.5rem' }}>Transform Your Sales Journey with <br /><span>SellorHub</span></h1>
+        <p style={{ maxWidth: '600px', margin: '0 auto 2.5rem auto' }}>
+          The ultimate platform to manage, showcase, and skyrocket your sales. Join thousands of top sellers today.
+        </p>
+        <div className="hero-actions" style={{ justifyContent: 'center' }}>
+          {user ? (
+            user.role !== 'buyer' && (
+              <Link
+                to={user.role === 'admin' ? '/admin' : '/seller'}
+                className="btn-primary btn-large"
+              >
+                {user.role === 'admin' ? 'Admin Dashboard' : 'Seller Dashboard'}
+              </Link>
+            )
+          ) : (
+            <>
+              <Link to="/explore" className="btn-primary btn-large">Explore Marketplace</Link>
+              <Link to="/register" className="btn-secondary btn-large">Start Selling Now</Link>
+            </>
           )}
         </div>
       </div>
-      <span className="dir-store-card-cta">Visit →</span>
-    </Link>
-  )
-}
-
-function HomePage() {
-  const { user } = useAuth()
-  const [featuredStores, setFeaturedStores] = useState<StoreProfile[]>([])
-  const [storesLoading, setStoresLoading] = useState(true)
-
-  useEffect(() => {
-    storeService.listStores({ limit: 6 })
-      .then((res) => setFeaturedStores(res.items))
-      .catch(() => {})
-      .finally(() => setStoresLoading(false))
-  }, [])
-
-  return (
-    <>
-      <div className="hero">
-        <div className="hero-content">
-          <h1>Transform Your Sales Journey with <span>SellorHub</span></h1>
-          <p>
-            The ultimate platform to manage, showcase, and skyrocket your sales. Join thousands of top sellers today.
-          </p>
-          <div className="hero-actions">
-            {user ? (
-              user.role !== 'buyer' && (
-                <Link
-                  to={user.role === 'admin' ? '/admin' : '/seller'}
-                  className="btn-primary btn-large"
-                >
-                  {user.role === 'admin' ? 'Admin Dashboard' : 'Seller Dashboard'}
-                </Link>
-              )
-            ) : (
-              <>
-                <Link to="/explore" className="btn-primary btn-large">Explore Marketplace</Link>
-                <Link to="/register" className="btn-secondary btn-large">Start Selling Now</Link>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="hero-graphics">
-          <div className="glass-card float-1">📦 Manage Inventory</div>
-          <div className="glass-card float-2">📈 Track Sales</div>
-          <div className="glass-card float-3">🤝 Connect with Buyers</div>
-        </div>
-      </div>
-
-      {/* Latest stores preview */}
-      <div className="home-stores-section">
-        <div className="home-stores-header">
-          <h2 className="home-stores-title">Latest Stores</h2>
-          <Link to="/stores" className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.4rem 1rem' }}>
-            View all stores →
-          </Link>
-        </div>
-
-        {storesLoading ? (
-          <div className="home-stores-grid">
-            {[1, 2, 3].map((n) => (
-              <div key={n} className="dir-store-card" style={{ pointerEvents: 'none' }}>
-                <div className="skeleton-block" style={{ width: 48, height: 48, borderRadius: '0.75rem', flexShrink: 0 }} />
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <div className="skeleton-block" style={{ width: '50%', height: 16 }} />
-                  <div className="skeleton-block" style={{ width: '75%', height: 13 }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : featuredStores.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', background: 'var(--glass)', borderRadius: '1rem', border: '1px solid var(--border)' }}>
-            No stores yet — be the first to{' '}
-            <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>start selling</Link>!
-          </div>
-        ) : (
-          <div className="home-stores-grid">
-            {featuredStores.map((s) => <HomeStoreCard key={s.id} store={s} />)}
-          </div>
-        )}
-      </div>
-    </>
+    </div>
   )
 }
 
@@ -219,21 +141,21 @@ function ProfileDropdown() {
           user.username.charAt(0).toUpperCase()
         )}
       </div>
-      
+
       {isOpen && (
         <>
-          <div 
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} 
-            onClick={() => setIsOpen(false)} 
+          <div
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}
+            onClick={() => setIsOpen(false)}
           />
           <div className="profile-dropdown">
             <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
               <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{user.username}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user.email}</div>
             </div>
-            
-            <button 
-              className="dropdown-item" 
+
+            <button
+              className="dropdown-item"
               onClick={() => { navigate('/profile'); setIsOpen(false); }}
             >
               <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,8 +164,8 @@ function ProfileDropdown() {
               My Profile
             </button>
 
-            <button 
-              className="dropdown-item" 
+            <button
+              className="dropdown-item"
               onClick={() => { navigate('/orders'); setIsOpen(false); }}
             >
               <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -253,8 +175,8 @@ function ProfileDropdown() {
             </button>
 
             {user.role !== 'buyer' && (
-              <button 
-                className="dropdown-item" 
+              <button
+                className="dropdown-item"
                 onClick={() => { navigate(user.role === 'admin' ? '/admin' : '/seller'); setIsOpen(false); }}
               >
                 <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,7 +187,7 @@ function ProfileDropdown() {
             )}
 
             <div className="dropdown-divider" />
-            
+
             <button className="dropdown-item logout" onClick={logout}>
               <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -280,9 +202,28 @@ function ProfileDropdown() {
 }
 
 function GlobalSearchBar() {
-  const { searchQuery, setSearchQuery } = useSearch()
+  const { 
+    searchQuery, setSearchQuery, 
+    sortBy, setSortBy,
+    minPrice, setMinPrice,
+    maxPrice, setMaxPrice
+  } = useSearch()
+  
   const navigate = useNavigate()
   const location = useLocation()
+  const [showPriceFilter, setShowPriceFilter] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    setShowPriceFilter(true)
+  }
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setShowPriceFilter(false)
+    }, 400) // 400ms delay to allow crossing the gap
+  }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
@@ -291,9 +232,30 @@ function GlobalSearchBar() {
     }
   }
 
+  const handleFilterChange = () => {
+    if (location.pathname !== '/explore') {
+      navigate('/explore')
+    }
+  }
+
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(e.target.value)
+    handleFilterChange()
+  }
+
+  const handleMinPrice = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMinPrice(e.target.value)
+    handleFilterChange()
+  }
+
+  const handleMaxPrice = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMaxPrice(e.target.value)
+    handleFilterChange()
+  }
+
   return (
-    <div className="nav-search-container" style={{ flex: 1, maxWidth: '600px' }}>
-      <div style={{ position: 'relative' }}>
+    <div className="nav-search-container" style={{ flex: 1, maxWidth: '850px', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+      <div style={{ position: 'relative', flex: 1 }}>
         <input
           type="text"
           className="form-input"
@@ -315,6 +277,96 @@ function GlobalSearchBar() {
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
+      </div>
+      
+      <select 
+        className="form-input" 
+        value={sortBy} 
+        onChange={handleSortChange}
+        style={{ 
+          width: '130px', 
+          height: '40px', 
+          borderRadius: '99px',
+          padding: '0 2rem 0 1rem', 
+          background: 'rgba(0,0,0,0.3)',
+          border: '1px solid var(--border)',
+          cursor: 'pointer',
+          fontSize: '0.85rem'
+        }}
+      >
+        <option value="newest">Newest</option>
+        <option value="popular">Popular</option>
+        <option value="price_asc">Price L-H</option>
+        <option value="price_desc">Price H-L</option>
+      </select>
+
+      <div 
+        className="nav-profile dropdown" 
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        style={{ position: 'relative' }}
+      >
+        <button 
+          className="form-input dropdown-trigger" 
+          style={{ 
+            height: '40px', 
+            borderRadius: '99px',
+            padding: '0 1rem', 
+            background: 'rgba(0,0,0,0.3)',
+            border: '1px solid var(--border)',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            color: 'var(--text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <svg style={{ width: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          Price Range
+        </button>
+
+        {showPriceFilter && (
+          <div className="dropdown-menu" style={{ 
+            position: 'absolute',
+            zIndex: 50,
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            top: 'calc(100% + 0.5rem)', 
+            width: '260px', 
+            padding: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: '0.75rem',
+            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)'
+          }}>
+            <input 
+              type="number" 
+              className="form-input" 
+              placeholder="Min ฿" 
+              value={minPrice} 
+              onChange={handleMinPrice}
+              min="0"
+              style={{ width: '100px' }}
+            />
+            <span style={{ color: 'var(--text-muted)' }}>-</span>
+            <input 
+              type="number" 
+              className="form-input" 
+              placeholder="Max ฿" 
+              value={maxPrice} 
+              onChange={handleMaxPrice}
+              min="0"
+              style={{ width: '100px' }}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

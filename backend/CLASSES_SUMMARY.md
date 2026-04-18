@@ -861,6 +861,39 @@ User (buyer/seller/admin)
 
 ---
 
-**Document Version:** 1.2  
-**Last Updated:** April 17, 2026  
-**Status:** Models, services, schemas, utilities, and cross-reference to state diagrams documented
+## 10. Frontend Model Classes (`frontend/src/lib/models/`)
+
+The frontend mirrors the backend's domain layer with a set of TypeScript classes under `frontend/src/lib/models/`. All are exported from the barrel file `frontend/src/lib/models/index.ts`.
+
+### Convention
+
+Services in `frontend/src/lib/services/` return raw API DTO types (interfaces from `frontend/src/lib/types.ts`). Pages and components must convert these DTOs into model instances using the static `fromDto` factory immediately after each fetch, **before** calling `setState`. This matches the pattern used by React's `Address.fromDto`, `Order.fromDto`, and `Cart.fromDto`.
+
+```
+API response DTO  →  Page (Model.fromDto)  →  State (Model instances)  →  UI helpers
+```
+
+### Model overview
+
+| Class | Source file | Key helpers | Primary consumers |
+|-------|-------------|-------------|-------------------|
+| `User` | `User.ts` | — | `AuthContext.tsx` |
+| `Product` | `Product.ts` | `formattedPrice()`, `primaryImage()` | `ExplorePage`, `ProductDetailPage`, `PublicStorePage`, `ManageProductsPage`, `SellerDashboardPage` |
+| `Store` | `Store.ts` | — | `ExplorePage`, `ProductDetailPage`, `PublicStorePage`, `StoresPage`, `CartPage`, `CheckoutPage`, `OrdersPage` |
+| `ProductGroup` | `ProductGroup.ts` | — | `PublicStorePage`, `ManageCategoriesPage`, `ManageProductsPage`, `CreateProductPage`, `EditProductPage`, `SellerDashboardPage` |
+| `Cart` | `Cart.ts` | — | `CartPage` |
+| `CartItem` | `CartItem.ts` | `lineTotal()`, `title()` | `CartPage` (via `Cart`) |
+| `Address` | `Address.ts` | `isDefault()`, `formattedAddress()` | `ProfilePage`, `CheckoutPage` |
+| `Order` | `Order.ts` | `formattedTotal()` | `OrdersPage` |
+| `Rating` | `Rating.ts` | `hasComment()`, `shortComment(len)` | `PublicStorePage` |
+| `Inquiry` | `Inquiry.ts` | `isNew()`, `isClosed()` | `SellerDashboardPage` |
+
+### Name collision note
+
+The interface `ProductGroup` in `types.ts` and the class `ProductGroup` in `models/ProductGroup.ts` share the same name. When both are needed in one file, import the type with an alias: `import type { ProductGroup as ProductGroupDto } from '../lib/types'`.
+
+---
+
+**Document Version:** 1.3  
+**Last Updated:** April 18, 2026  
+**Status:** Models, services, schemas, utilities, frontend model classes, and cross-reference to state diagrams documented

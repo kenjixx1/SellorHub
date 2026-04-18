@@ -28,7 +28,7 @@ export default function LoginPage() {
           ? '/admin'
           : res.user.role === 'seller'
           ? '/seller'
-          : '/me'
+          : '/explore'
       nav(destination)
     } catch (err: any) {
       setError(err?.message ?? 'Login failed')

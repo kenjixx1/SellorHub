@@ -4,7 +4,10 @@ import { useAuth } from '../auth/AuthContext'
 import { sellerService } from '../lib/services/sellerService'
 import { productService } from '../lib/services/productService'
 import { orderService } from '../lib/services/orderService'
-import type { SellerDashboard, SellerProduct, ProductGroup, OrderResponse } from '../lib/types'
+import type { SellerDashboard, OrderResponse } from '../lib/types'
+import { Product } from '../lib/models/Product'
+import { ProductGroup } from '../lib/models/ProductGroup'
+import { Inquiry } from '../lib/models/Inquiry'
 import { ApiError } from '../lib/api'
 
 // ── Tiny helpers ──────────────────────────────────────────────────────────────
@@ -111,7 +114,7 @@ export default function SellerDashboardPage() {
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [noStore, setNoStore] = useState(false)
 
-  const [products, setProducts] = useState<SellerProduct[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [productsError, setProductsError] = useState<string | null>(null)
   const [productsLoading, setProductsLoading] = useState(false)
 
@@ -142,7 +145,7 @@ export default function SellerDashboardPage() {
     setProductsLoading(true)
     try {
       const data = await productService.getSellerProducts(activeToken, { limit: 5 })
-      setProducts(data.products)
+      setProducts(data.products.map(Product.fromDto))
       setProductsError(null)
     } catch (err: any) {
       setProductsError(err?.message ?? 'Failed to load products')
@@ -154,7 +157,7 @@ export default function SellerDashboardPage() {
   const fetchGroups = async () => {
     try {
       const data = await sellerService.getMyProductGroups(activeToken)
-      setGroups(data)
+      setGroups(data.map(ProductGroup.fromDto))
       setGroupsError(null)
     } catch (err: any) {
       setGroupsError(err?.message ?? 'Failed to load groups')
@@ -376,7 +379,7 @@ export default function SellerDashboardPage() {
           <EmptyState text="No inquiries yet." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {dashboard.recent_inquiries.map((inq) => (
+            {dashboard.recent_inquiries.map(Inquiry.fromDto).map((inq) => (
               <div
                 key={inq.id}
                 style={{
@@ -384,8 +387,8 @@ export default function SellerDashboardPage() {
                   gridTemplateColumns: '1fr auto',
                   gap: '0.5rem 1rem',
                   padding: '0.75rem 1rem',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid var(--border)',
+                  background: inq.isNew() ? 'rgba(129,140,248,0.05)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${inq.isNew() ? 'rgba(129,140,248,0.25)' : 'var(--border)'}`,
                   borderRadius: '0.5rem',
                 }}
               >
@@ -502,7 +505,7 @@ export default function SellerDashboardPage() {
                         {p.title}
                       </td>
                       <td style={{ padding: '0.55rem 0.75rem', whiteSpace: 'nowrap' }}>
-                        ฿{Number(p.price).toLocaleString()}
+                        ฿{p.formattedPrice()}
                       </td>
                       <td style={{ padding: '0.55rem 0.75rem', color: 'var(--text-muted)' }}>
                         {p.stock ?? '—'}

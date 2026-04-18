@@ -3,40 +3,50 @@ import { Link } from 'react-router-dom'
 import { productService } from '../lib/services/productService'
 import { storeService } from '../lib/services/storeService'
 import { ratingService } from '../lib/services/ratingService'
-import type { PublicProduct, StoreProfile } from '../lib/types'
+import { Product } from '../lib/models/Product'
+import { Store } from '../lib/models/Store'
 import { useSearch } from '../main'
 
 export default function ExplorePage() {
-  const [products, setProducts] = useState<PublicProduct[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [stores, setStores] = useState<Record<number, StoreProfile>>({})
+  const [stores, setStores] = useState<Record<number, Store>>({})
   const [storeRatings, setStoreRatings] = useState<Record<number, { score: number; count: number }>>({})
-  const { searchQuery, setSearchQuery } = useSearch()
+  const { searchQuery, setSearchQuery, sortBy, minPrice, maxPrice } = useSearch()
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+  const [debouncedMinPrice, setDebouncedMinPrice] = useState<number | undefined>(undefined)
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = useState<number | undefined>(undefined)
 
-  // Debounce search input
+  // Debounce search input and prices
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery)
+      setDebouncedMinPrice(minPrice !== '' ? Number(minPrice) : undefined)
+      setDebouncedMaxPrice(maxPrice !== '' ? Number(maxPrice) : undefined)
     }, 500)
     return () => clearTimeout(timer)
-  }, [searchQuery])
+  }, [searchQuery, minPrice, maxPrice])
 
   useEffect(() => {
     async function loadProducts() {
       setLoading(true)
       try {
         const [productData, storeData] = await Promise.all([
-          productService.getPublicProducts({ search: debouncedSearch }),
+          productService.getPublicProducts({ 
+            search: debouncedSearch,
+            sort_by: sortBy,
+            min_price: debouncedMinPrice,
+            max_price: debouncedMaxPrice
+          }),
           storeService.listStores()
         ])
-        
+
         const productItems = productData.items || (productData as any).products || []
-        setProducts(productItems)
-        
-        const storeMap = storeData.items.reduce((acc: any, s: StoreProfile) => {
-          acc[s.id] = s
+        setProducts(productItems.map(Product.fromDto))
+
+        const storeMap = storeData.items.reduce((acc: Record<number, Store>, s) => {
+          acc[s.id] = Store.fromDto(s)
           return acc
         }, {})
         setStores(storeMap)
@@ -45,20 +55,20 @@ export default function ExplorePage() {
         const uniqueStoreIds = Array.from(new Set(productItems.map((p: any) => p.store_id)))
         const ratingsResults = await Promise.all(
           uniqueStoreIds.map(async (sid: any) => {
-             try {
-                const r = await ratingService.getStoreRatings(sid)
-                return { id: sid, score: r.average_score, count: r.total_ratings }
-             } catch {
-                return { id: sid, score: 0, count: 0 }
-             }
+            try {
+              const r = await ratingService.getStoreRatings(sid)
+              return { id: sid, score: r.average_score, count: r.total_ratings }
+            } catch {
+              return { id: sid, score: 0, count: 0 }
+            }
           })
         )
         const ratingsMap = ratingsResults.reduce((acc: any, res: any) => {
-           acc[res.id] = { score: res.score, count: res.count }
-           return acc
+          acc[res.id] = { score: res.score, count: res.count }
+          return acc
         }, {})
         setStoreRatings(ratingsMap)
-        
+
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load products')
@@ -67,7 +77,7 @@ export default function ExplorePage() {
       }
     }
     loadProducts()
-  }, [debouncedSearch])
+  }, [debouncedSearch, sortBy, debouncedMinPrice, debouncedMaxPrice])
 
   return (
     <div className="explore-page-wrapper" style={{ padding: '2rem 5%' }}>
@@ -98,8 +108,8 @@ export default function ExplorePage() {
       ) : (
         <div className="store-product-grid">
           {products.map((product) => {
-            const thumbnail = product.images?.[0]?.image_url;
-            const isSold = product.status === 'sold';
+            const thumbnail = product.primaryImage()
+            const isSold = product.status === 'sold'
 
             return (
               <Link
@@ -120,7 +130,7 @@ export default function ExplorePage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
                     <h3 className="store-product-card-title" style={{ margin: 0 }}>{product.title}</h3>
                   </div>
-                  
+
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span>by <strong>{stores[product.store_id]?.name || 'Store'}</strong></span>
                     {storeRatings[product.store_id]?.count > 0 && (
@@ -137,7 +147,7 @@ export default function ExplorePage() {
                   </div>
                   <div className="store-product-card-footer">
                     <span className="store-product-card-price">
-                      ฿{parseFloat(product.price).toLocaleString()}
+                      ฿{product.formattedPrice()}
                     </span>
                     <span className="store-product-card-cta">View details →</span>
                   </div>

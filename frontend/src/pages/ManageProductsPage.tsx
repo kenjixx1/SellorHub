@@ -3,13 +3,14 @@ import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { sellerService } from '../lib/services/sellerService'
 import { productService } from '../lib/services/productService'
-import type { SellerProduct, ProductGroup } from '../lib/types'
+import { Product } from '../lib/models/Product'
+import { ProductGroup } from '../lib/models/ProductGroup'
 
 export default function ManageProductsPage() {
   const { user, token, loading: authLoading } = useAuth()
   const activeToken = token ?? ''
 
-  const [products, setProducts] = useState<SellerProduct[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [groups, setGroups] = useState<ProductGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -19,9 +20,9 @@ export default function ManageProductsPage() {
     setError(null)
     try {
       const g = await sellerService.getMyProductGroups(activeToken)
-      setGroups(g)
+      setGroups(g.map(ProductGroup.fromDto))
       const p = await productService.getSellerProducts(activeToken, { limit: 100 })
-      setProducts(p.products)
+      setProducts(p.products.map(Product.fromDto))
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load products')
     } finally {
@@ -97,9 +98,9 @@ export default function ManageProductsPage() {
               {products.map(p => (
                 <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                     {p.images && p.images.length > 0 ? (
+                     {p.primaryImage() ? (
                        <div style={{ width: 40, height: 40, borderRadius: 4, overflow: 'hidden', background: '#000' }}>
-                         <img src={p.images[0].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                         <img src={p.primaryImage()!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                        </div>
                      ) : (
                        <div style={{ width: 40, height: 40, borderRadius: 4, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -108,7 +109,7 @@ export default function ManageProductsPage() {
                      )}
                      <span style={{ fontWeight: 600 }}>{p.title}</span>
                   </td>
-                  <td style={{ padding: '0.75rem 1rem' }}>฿{Number(p.price).toLocaleString()}</td>
+                  <td style={{ padding: '0.75rem 1rem' }}>฿{p.formattedPrice()}</td>
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{p.stock ?? 'Unlimited'}</td>
                   <td style={{ padding: '0.75rem 1rem' }}>
                      <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: 9999, background: 'rgba(255,255,255,0.06)', color: statusColors[p.status] ?? 'var(--text-muted)', border: `1px solid ${statusColors[p.status] ?? 'var(--border)'}33` }}>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { sellerService } from '../lib/services/sellerService'
-import type { ProductGroup } from '../lib/types'
+import { ProductGroup } from '../lib/models/ProductGroup'
 
 export default function ManageCategoriesPage() {
   const { user, token, loading: authLoading } = useAuth()
@@ -28,7 +28,7 @@ export default function ManageCategoriesPage() {
     setError(null)
     try {
       const data = await sellerService.getMyProductGroups(activeToken)
-      setGroups(data)
+      setGroups(data.map(ProductGroup.fromDto))
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load categories')
     } finally {
@@ -46,7 +46,7 @@ export default function ManageCategoriesPage() {
     setError(null)
     try {
       const created = await sellerService.createProductGroup(activeToken, newName.trim())
-      setGroups(prev => [...prev, created])
+      setGroups(prev => [...prev, ProductGroup.fromDto(created)])
       setNewName('')
     } catch (err: any) {
       setError(err?.message ?? 'Failed to create category')
@@ -61,7 +61,7 @@ export default function ManageCategoriesPage() {
     setError(null)
     try {
       const updated = await sellerService.updateProductGroup(activeToken, groupId, editingName.trim())
-      setGroups(prev => prev.map(g => g.id === groupId ? updated : g))
+      setGroups(prev => prev.map(g => g.id === groupId ? ProductGroup.fromDto(updated) : g))
       setEditingId(null)
       setEditingName('')
     } catch (err: any) {

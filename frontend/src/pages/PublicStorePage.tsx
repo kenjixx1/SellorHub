@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { storeService } from '../lib/services/storeService'
 import { ratingService } from '../lib/services/ratingService'
-import type { StoreProfile, ProductGroup, SellerProduct, StoreSummaryRating } from '../lib/types'
+import type { StoreSummaryRating } from '../lib/types'
+import { Product } from '../lib/models/Product'
+import { Store } from '../lib/models/Store'
+import { ProductGroup } from '../lib/models/ProductGroup'
+import { Rating } from '../lib/models/Rating'
 import { ApiError, API_BASE_URL } from '../lib/api'
 
 // ── Product card (rectangular) ────────────────────────────────────────────────
 
-function ProductCard({ product }: { product: SellerProduct }) {
-  const thumbnail = product.images?.[0]?.image_url
+function ProductCard({ product }: { product: Product }) {
+  const thumbnail = product.primaryImage()
   const isSold = product.status === 'sold'
 
   return (
@@ -36,7 +40,7 @@ function ProductCard({ product }: { product: SellerProduct }) {
         )}
         <div className="store-product-card-footer">
           <span className="store-product-card-price">
-            ฿{Number(product.price).toLocaleString()}
+            ฿{product.formattedPrice()}
           </span>
           <span className="store-product-card-cta">View details →</span>
         </div>
@@ -54,7 +58,7 @@ function ProductSection({
 }: {
   id?: string
   title: string
-  products: SellerProduct[]
+  products: Product[]
 }) {
   if (products.length === 0) return null
 
@@ -281,9 +285,9 @@ function CategoryDropdown({
 export default function PublicStorePage() {
   const { slug } = useParams<{ slug: string }>()
 
-  const [store, setStore] = useState<StoreProfile | null>(null)
+  const [store, setStore] = useState<Store | null>(null)
   const [groups, setGroups] = useState<ProductGroup[]>([])
-  const [products, setProducts] = useState<SellerProduct[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [ratings, setRatings] = useState<StoreSummaryRating | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -312,9 +316,9 @@ export default function PublicStorePage() {
 
         if (cancelled) return
 
-        setStore(storeData)
-        setGroups(groupsData)
-        setProducts(productsData.products)
+        setStore(Store.fromDto(storeData))
+        setGroups(groupsData.map(ProductGroup.fromDto))
+        setProducts(productsData.products.map(Product.fromDto))
 
         const ratingsData = await ratingService.getStoreRatings(storeData.id)
         if (!cancelled) setRatings(ratingsData)
@@ -393,8 +397,8 @@ export default function PublicStorePage() {
 
   // ── Build grouped sections client-side ───────────────────────────────────────
 
-  const groupedProducts: Record<number, SellerProduct[]> = {}
-  const ungroupedProducts: SellerProduct[] = []
+  const groupedProducts: Record<number, Product[]> = {}
+  const ungroupedProducts: Product[] = []
 
   for (const p of products) {
     if (p.group_id != null) {
@@ -533,7 +537,7 @@ export default function PublicStorePage() {
              </h2>
 
              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
-               {ratings.ratings.map(rating => (
+               {ratings.ratings.map(Rating.fromDto).map(rating => (
                  <div key={rating.id} style={{ background: 'var(--glass)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--border)' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -563,7 +567,7 @@ export default function PublicStorePage() {
                        {new Date(rating.created_at).toLocaleDateString()}
                      </div>
                    </div>
-                   {rating.comment && (
+                   {rating.hasComment() && (
                      <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: 1.6, color: 'rgba(255,255,255,0.8)' }}>
                        {rating.comment}
                      </p>

@@ -3,7 +3,8 @@ import { Navigate, useNavigate, useParams, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { sellerService } from '../lib/services/sellerService'
 import { productService } from '../lib/services/productService'
-import type { ProductGroup, ProductStatus } from '../lib/types'
+import type { ProductStatus } from '../lib/types'
+import { ProductGroup } from '../lib/models/ProductGroup'
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>()
@@ -33,7 +34,7 @@ export default function EditProductPage() {
     async function init() {
       try {
         const productGroups = await sellerService.getMyProductGroups(activeToken)
-        setGroups(productGroups)
+        setGroups(productGroups.map(ProductGroup.fromDto))
 
         if (id) {
            const p = await productService.getById(Number(id))
@@ -194,7 +195,7 @@ export default function EditProductPage() {
                     setCreatingGroup(true)
                     try {
                       const created = await sellerService.createProductGroup(activeToken, newGroupName.trim())
-                      setGroups(prev => [...prev, created])
+                      setGroups(prev => [...prev, ProductGroup.fromDto(created)])
                       setGroupId(String(created.id))
                       setIsCreatingGroup(false)
                       setNewGroupName('')

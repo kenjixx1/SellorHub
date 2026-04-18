@@ -6,8 +6,8 @@ import { addressService } from '../lib/services/addressService'
 import { orderService } from '../lib/services/orderService'
 import { storeService } from '../lib/services/storeService'
 import { API_BASE_URL } from '../lib/api'
-import type { StoreProfile } from '../lib/types'
 import { Address } from '../lib/models'
+import { Store } from '../lib/models/Store'
 
 export default function CheckoutPage() {
   const { token } = useAuth()
@@ -18,7 +18,7 @@ export default function CheckoutPage() {
   const [isChangingAddress, setIsChangingAddress] = useState(false)
   
   const [items, setItems] = useState<any[]>([]) // CartItem[] or DirectCheckoutItem[]
-  const [stores, setStores] = useState<Record<number, StoreProfile>>({})
+  const [stores, setStores] = useState<Record<number, Store>>({})
   const [loading, setLoading] = useState(true)
   const [placingOrder, setPlacingOrder] = useState(false)
   
@@ -61,9 +61,9 @@ export default function CheckoutPage() {
       // 3. Resolve Store Metadata
       const storeIds = Array.from(new Set(checkoutItems.map(i => i.product.store_id)))
       const storeList = await storeService.listStores({ limit: 100 })
-      const storeMap: Record<number, StoreProfile> = {}
+      const storeMap: Record<number, Store> = {}
       storeList.items.forEach(s => {
-        if (storeIds.includes(s.id)) storeMap[s.id] = s
+        if (storeIds.includes(s.id)) storeMap[s.id] = Store.fromDto(s)
       })
       setStores(storeMap)
 

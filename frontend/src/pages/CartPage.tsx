@@ -4,8 +4,8 @@ import { useAuth } from '../auth/AuthContext'
 import { cartService } from '../lib/services/cartService'
 import { storeService } from '../lib/services/storeService'
 import { API_BASE_URL } from '../lib/api'
-import type { StoreProfile } from '../lib/types'
 import { Cart, CartItem } from '../lib/models'
+import { Store } from '../lib/models/Store'
 
 export default function CartPage() {
   const { token, user } = useAuth()
@@ -14,7 +14,7 @@ export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [stores, setStores] = useState<Record<number, StoreProfile>>({})
+  const [stores, setStores] = useState<Record<number, Store>>({})
 
   // Selection state
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([])
@@ -50,10 +50,10 @@ export default function CartPage() {
       // Since we don't have a bulk-get-by-id, we'll try to find them in the stores list
       // Or just fetch all stores (Marketplace typically doesn't have thousands in one cart context)
       const res = await storeService.listStores({ limit: 100 })
-      const storeMap = { ...stores }
+      const storeMap: Record<number, Store> = { ...stores }
       res.items.forEach(s => {
         if (storeIds.includes(s.id)) {
-          storeMap[s.id] = s
+          storeMap[s.id] = Store.fromDto(s)
         }
       })
       setStores(storeMap)

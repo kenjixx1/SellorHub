@@ -4,8 +4,8 @@ import { useAuth } from '../auth/AuthContext'
 import { orderService } from '../lib/services/orderService'
 import { storeService } from '../lib/services/storeService'
 import { ratingService } from '../lib/services/ratingService'
-import type { StoreProfile } from '../lib/types'
-import { Order } from '../lib/models'
+import { Order } from '../lib/models/Order'
+import { Store } from '../lib/models/Store'
 
 const STATUS_TABS = ['all', 'placed', 'paid', 'packing', 'shipped', 'delivered', 'cancelled']
 
@@ -24,7 +24,7 @@ export default function OrdersPage() {
   const navigate = useNavigate()
 
   const [orders, setOrders] = useState<Order[]>([])
-  const [stores, setStores] = useState<Record<number, StoreProfile>>({})
+  const [stores, setStores] = useState<Record<number, Store>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('all')
@@ -49,8 +49,8 @@ export default function OrdersPage() {
 
       setOrders(orderList.items.map(Order.fromDto))
 
-      const storeMap = allStores.items.reduce((acc: any, s: StoreProfile) => {
-        acc[s.id] = s
+      const storeMap = allStores.items.reduce((acc: Record<number, Store>, s) => {
+        acc[s.id] = Store.fromDto(s)
         return acc
       }, {})
       setStores(storeMap)
