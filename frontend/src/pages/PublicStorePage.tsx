@@ -48,16 +48,18 @@ function ProductCard({ product }: { product: SellerProduct }) {
 // ── Product section (one per group) ──────────────────────────────────────────
 
 function ProductSection({
+  id,
   title,
   products,
 }: {
+  id?: string
   title: string
   products: SellerProduct[]
 }) {
   if (products.length === 0) return null
 
   return (
-    <section className="store-product-section">
+    <section className="store-product-section" id={id}>
       <h2 className="store-section-title">{title}</h2>
       <div className="store-product-grid">
         {products.map((p) => (
@@ -110,6 +112,172 @@ function StoreLogo({ name, logoUrl }: { name: string; logoUrl?: string | null })
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+const discoveryStyles = `
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Custom Dropdown Animations */
+  @keyframes dropdown-slide-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .custom-dropdown-content {
+    animation: dropdown-slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dropdown-option {
+    transition: all 0.2s ease;
+  }
+
+  .dropdown-option:hover {
+    background: rgba(255, 255, 255, 0.08);
+    padding-left: 1rem;
+  }
+`
+
+function CategoryDropdown({ 
+  groups, 
+  ungroupedCount, 
+  activeId, 
+  onSelect 
+}: { 
+  groups: ProductGroup[], 
+  ungroupedCount: number,
+  activeId: number | null,
+  onSelect: (id: number | null) => void 
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  const currentLabel = activeId === null 
+    ? 'All Categories' 
+    : (activeId === -1 ? 'Uncategorized' : groups.find(g => g.id === activeId)?.name || 'Category')
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          padding: '0.5rem 1.25rem',
+          background: 'rgba(0, 0, 0, 0.2)',
+          border: '1px solid var(--border)',
+          borderRadius: '99px',
+          color: 'var(--text)',
+          fontSize: '0.9rem',
+          fontWeight: 600,
+          cursor: 'pointer',
+          minWidth: '180px',
+          justifyContent: 'space-between',
+          transition: 'all 0.2s ease'
+        }}
+      >
+        <span>{currentLabel}</span>
+        <svg 
+          style={{ width: '1rem', height: '1rem', transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' }} 
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <>
+          <div 
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }} 
+            onClick={() => setIsOpen(false)} 
+          />
+          <div 
+            className="custom-dropdown-content"
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 0.75rem)',
+              left: 0,
+              width: '240px',
+              background: 'rgba(15, 23, 42, 0.95)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid var(--border)',
+              borderRadius: '1rem',
+              boxShadow: '0 15px 35px -5px rgba(0, 0, 0, 0.5)',
+              zIndex: 101,
+              padding: '0.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.25rem'
+            }}
+          >
+            <button
+              className="dropdown-option"
+              onClick={() => { onSelect(null); setIsOpen(false); }}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '0.625rem 0.75rem',
+                background: activeId === null ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                color: activeId === null ? 'var(--primary)' : 'var(--text)',
+                borderRadius: '0.5rem',
+                border: 'none',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              All Categories
+            </button>
+            
+            {groups.map(g => (
+              <button
+                key={g.id}
+                className="dropdown-option"
+                onClick={() => { onSelect(g.id); setIsOpen(false); }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '0.625rem 0.75rem',
+                  background: activeId === g.id ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                  color: activeId === g.id ? 'var(--primary)' : 'var(--text)',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  cursor: 'pointer'
+                }}
+              >
+                {g.name}
+              </button>
+            ))}
+
+            {ungroupedCount > 0 && (
+              <button
+                className="dropdown-option"
+                onClick={() => { onSelect(-1); setIsOpen(false); }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '0.625rem 0.75rem',
+                  background: activeId === -1 ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                  color: activeId === -1 ? 'var(--primary)' : 'var(--text-muted)',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  marginTop: '0.25rem',
+                  borderTop: '1px solid var(--border)'
+                }}
+              >
+                Uncategorized
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function PublicStorePage() {
   const { slug } = useParams<{ slug: string }>()
 
@@ -121,6 +289,9 @@ export default function PublicStorePage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Discovery states
+  const [activeGroupId, setActiveGroupId] = useState<number | null>(null)
 
   useEffect(() => {
     if (!slug) return
@@ -266,14 +437,50 @@ export default function PublicStorePage() {
                   <span style={{ color: 'var(--text-muted)' }}>({ratings.total_ratings} reviews)</span>
                 </div>
               )}
-              <span>Joined {new Date(store.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</span>
             </div>
           </div>
         </div>
       </div>
 
+      <style>{discoveryStyles}</style>
+
       {/* Catalog */}
-      <div className="store-catalog">
+      <div className="store-catalog" style={{ marginTop: '2rem' }}>
+        
+        {/* Discovery / Filter Bar */}
+        {hasAnyProducts && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            gap: '1rem',
+            marginBottom: '2rem',
+            flexWrap: 'wrap',
+            padding: '1rem',
+            background: 'var(--glass)',
+            borderRadius: '1rem',
+            border: '1px solid var(--border)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>Products</h2>
+              <CategoryDropdown 
+                groups={groups} 
+                ungroupedCount={ungroupedProducts.length}
+                activeId={activeGroupId}
+                onSelect={(id) => {
+                  setActiveGroupId(id)
+                  if (id === null) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  } else if (id === -1) {
+                    document.getElementById('group-others')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  } else {
+                    document.getElementById(`group-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Empty store */}
         {!hasAnyProducts && (
@@ -297,9 +504,11 @@ export default function PublicStorePage() {
         {/* Grouped sections */}
         {groups.map((group) => {
           const groupProds = groupedProducts[group.id] ?? []
+          
           return (
             <ProductSection
               key={group.id}
+              id={`group-${group.id}`}
               title={group.name}
               products={groupProds}
             />
@@ -309,6 +518,7 @@ export default function PublicStorePage() {
         {/* Ungrouped products */}
         {ungroupedProducts.length > 0 && (
           <ProductSection
+            id="group-others"
             title={groups.length > 0 ? 'Other Products' : 'Products'}
             products={ungroupedProducts}
           />

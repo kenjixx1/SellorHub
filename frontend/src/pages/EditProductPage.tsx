@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { sellerService } from '../lib/services/sellerService'
 import { productService } from '../lib/services/productService'
@@ -23,6 +23,9 @@ export default function EditProductPage() {
   const [stock, setStock] = useState('')
   const [status, setStatus] = useState<ProductStatus>('active')
   const [groupId, setGroupId] = useState<string>('')
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [creatingGroup, setCreatingGroup] = useState(false)
 
   useEffect(() => {
     if (!activeToken || !user || user.role !== 'seller') return
@@ -163,17 +166,84 @@ export default function EditProductPage() {
         {/* Categories and Status */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
           <div className="form-group">
-            <label className="form-label">Category / Group</label>
-            <select 
-              className="form-input"
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-            >
-              <option value="">-- Uncategorized --</option>
-              {groups.map(g => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="form-label">Category / Group</label>
+              <Link to="/categories" style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>Manage Categories</Link>
+            </div>
+            
+            {isCreatingGroup ? (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  style={{ flex: 1, padding: '0.4rem 0.75rem', fontSize: '0.9rem' }}
+                  placeholder="Category Name" 
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  autoFocus
+                />
+                <button 
+                  type="button" 
+                  className="btn-primary" 
+                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', borderRadius: '6px' }}
+                  onClick={async () => {
+                    if (!newGroupName.trim()) {
+                      setIsCreatingGroup(false)
+                      return
+                    }
+                    setCreatingGroup(true)
+                    try {
+                      const created = await sellerService.createProductGroup(activeToken, newGroupName.trim())
+                      setGroups(prev => [...prev, created])
+                      setGroupId(String(created.id))
+                      setIsCreatingGroup(false)
+                      setNewGroupName('')
+                    } catch (err: any) {
+                      alert(err?.message ?? 'Failed to create category')
+                    } finally {
+                      setCreatingGroup(false)
+                    }
+                  }}
+                  disabled={creatingGroup}
+                >
+                  {creatingGroup ? '...' : 'Add'}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', borderRadius: '6px' }}
+                  onClick={() => setIsCreatingGroup(false)}
+                  disabled={creatingGroup}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <select 
+                  className="form-input"
+                  style={{ flex: 1 }}
+                  value={groupId}
+                  onChange={(e) => setGroupId(e.target.value)}
+                >
+                  <option value="">-- Uncategorized --</option>
+                  {groups.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  style={{ padding: '0', width: '42px', flexShrink: 0, borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onClick={() => setIsCreatingGroup(true)}
+                  title="Create new category"
+                >
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="form-group">

@@ -21,6 +21,7 @@ import CartPage from './pages/CartPage'
 import CheckoutPage from './pages/CheckoutPage'
 import OrderSuccessPage from './pages/OrderSuccessPage'
 import OrdersPage from './pages/OrdersPage'
+import ManageCategoriesPage from './pages/ManageCategoriesPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { storeService } from './lib/services/storeService'
 import type { StoreProfile } from './lib/types'
@@ -413,6 +414,7 @@ function AppShell() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/checkout/success" element={<OrderSuccessPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/categories" element={<ManageCategoriesPage />} />
         </Routes>
       </main>
     </>
