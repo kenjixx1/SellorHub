@@ -853,6 +853,14 @@ User (buyer/seller/admin)
 
 ---
 
-**Document Version:** 1.1  
-**Last Updated:** April 2, 2026  
-**Status:** Models, services, schemas, and utilities documented
+## 9. Related design documents
+
+| Document | Description |
+|----------|-------------|
+| [`../diagram/State_Diagram.md`](../diagram/State_Diagram.md) | Plain-text **state machine** specs (ST-01–ST-12): Order, Product, Inquiry, seller approval, cart session, store, shipment, product image, store rating, address, product group, buyer account. |
+
+---
+
+**Document Version:** 1.2  
+**Last Updated:** April 17, 2026  
+**Status:** Models, services, schemas, utilities, and cross-reference to state diagrams documented
