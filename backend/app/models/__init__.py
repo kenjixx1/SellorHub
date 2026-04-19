@@ -1,6 +1,3 @@
-"""
-SQLAlchemy ORM models for Sellor platform.
-"""
 from app.models.user import User
 from app.models.store import Store
 from app.models.product_group import ProductGroup
@@ -14,19 +11,4 @@ from app.models.shipment import Shipment
 from app.models.address import Address
 from app.models.cart import CartItem
 from app.models.store_rating import StoreRating
-
-__all__ = [
-    "User",
-    "Store",
-    "ProductGroup",
-    "Product",
-    "ProductImage",
-    "Inquiry",
-    "Order",
-    "OrderItem",
-    "OrderStatusHistory",
-    "Shipment",
-    "Address",
-    "CartItem",
-    "StoreRating",
-]
+__all__ = ['User', 'Store', 'ProductGroup', 'Product', 'ProductImage', 'Inquiry', 'Order', 'OrderItem', 'OrderStatusHistory', 'Shipment', 'Address', 'CartItem', 'StoreRating']

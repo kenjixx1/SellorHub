@@ -4,7 +4,6 @@ import { productService } from '../lib/services/productService'
 import { storeService } from '../lib/services/storeService'
 import { ratingService } from '../lib/services/ratingService'
 import { cartService } from '../lib/services/cartService'
-import { inquiryService } from '../lib/services/inquiryService'
 import { Product } from '../lib/models/Product'
 import { Store } from '../lib/models/Store'
 import { useAuth } from '../auth/AuthContext'
@@ -26,11 +25,6 @@ export default function ProductDetailPage() {
   const { token } = useAuth()
 
 
-  const [inquiryName, setInquiryName] = useState('')
-  const [inquiryEmail, setInquiryEmail] = useState('')
-  const [inquiryMessage, setInquiryMessage] = useState('')
-  const [inquiryLoading, setInquiryLoading] = useState(false)
-  const [inquirySuccess, setInquirySuccess] = useState(false)
 
   useEffect(() => {
     async function loadProduct() {
@@ -58,27 +52,6 @@ export default function ProductDetailPage() {
     }
     loadProduct()
   }, [id])
-
-  async function handleInquiry(e: React.FormEvent) {
-    e.preventDefault()
-    if (!product) return
-
-    setInquiryLoading(true)
-    try {
-      await inquiryService.create({
-        product_id: product.id,
-        buyer_name: inquiryName,
-        buyer_email: inquiryEmail,
-        message: inquiryMessage,
-      })
-      setInquirySuccess(true)
-      setInquiryMessage('')
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to send inquiry')
-    } finally {
-      setInquiryLoading(false)
-    }
-  }
 
   async function handleAddToCart() {
     if (!token) {
@@ -254,47 +227,6 @@ export default function ProductDetailPage() {
             </p>
           </div>
 
-          <div className="seller-section" style={{ background: 'rgba(255,255,255,0.02)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Inquire with Seller</h3>
-            {inquirySuccess ? (
-              <div className="validation-hint valid" style={{ padding: '0.75rem', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '6px' }}>
-                Inquiry sent successfully!
-              </div>
-            ) : (
-              <form onSubmit={handleInquiry} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  required
-                  className="form-input"
-                  style={{ background: 'rgba(0,0,0,0.3)', height: '40px' }}
-                  value={inquiryName}
-                  onChange={(e) => setInquiryName(e.target.value)}
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  required
-                  className="form-input"
-                  style={{ background: 'rgba(0,0,0,0.3)', height: '40px' }}
-                  value={inquiryEmail}
-                  onChange={(e) => setInquiryEmail(e.target.value)}
-                />
-                <textarea
-                  placeholder="Message the seller..."
-                  required
-                  className="form-input"
-                  rows={3}
-                  style={{ background: 'rgba(0,0,0,0.3)' }}
-                  value={inquiryMessage}
-                  onChange={(e) => setInquiryMessage(e.target.value)}
-                ></textarea>
-                <button type="submit" disabled={inquiryLoading} className="btn-secondary" style={{ borderRadius: '8px' }}>
-                  {inquiryLoading ? 'Sending...' : 'Send Message'}
-                </button>
-              </form>
-            )}
-          </div>
         </div>
       </div>
     </div>

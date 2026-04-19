@@ -1,25 +1,17 @@
-"""
-Store rating schemas.
-"""
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
 
-
 class RatingCreate(BaseModel):
-    """Create or update a store rating."""
     store_id: int
     score: int = Field(..., ge=1, le=5)
     comment: Optional[str] = Field(None, max_length=1000)
     order_id: Optional[int] = None
 
-
 class RatingUpdate(BaseModel):
-    """Update an existing rating."""
     score: Optional[int] = Field(None, ge=1, le=5)
     comment: Optional[str] = Field(None, max_length=1000)
-
 
 class RatingBuyerInfo(BaseModel):
     id: int
@@ -29,9 +21,7 @@ class RatingBuyerInfo(BaseModel):
     class Config:
         from_attributes = True
 
-
 class RatingResponse(BaseModel):
-    """Single rating response."""
     id: int
     store_id: int
     buyer_id: int
@@ -45,9 +35,7 @@ class RatingResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class StoreSummaryRating(BaseModel):
-    """Aggregated rating info for a store."""
     store_id: int
     average_score: Optional[Decimal] = None
     total_ratings: int
