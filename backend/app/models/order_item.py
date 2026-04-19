@@ -15,3 +15,9 @@ class OrderItem(Base):
 
     def __repr__(self):
         return f'<OrderItem(id={self.id}, order_id={self.order_id}, product_id={self.product_id})>'
+
+    @property
+    def product_image_url(self):
+        if self.product and self.product.images:
+            return self.product.images[0].image_url
+        return None

@@ -14,6 +14,7 @@ class OrderItemResponse(BaseModel):
     product_title_snapshot: str
     unit_price_snapshot: Decimal
     quantity: int
+    product_image_url: Optional[str] = None
 
     class Config:
         from_attributes = True

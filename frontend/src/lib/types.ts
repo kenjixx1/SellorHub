@@ -109,6 +109,7 @@ export interface OrderItemResponse {
   product_title_snapshot: string
   unit_price_snapshot: number
   quantity: number
+  product_image_url?: string | null
 }
 
 export interface AddressResponse {

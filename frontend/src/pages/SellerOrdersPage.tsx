@@ -186,7 +186,16 @@ export default function SellerOrdersPage() {
               <div style={{ padding: '1.25rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {order.items.map(item => (
-                    <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '1rem', alignItems: 'center' }}>
+                    <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '50px 1fr 100px 100px', gap: '1rem', alignItems: 'center' }}>
+                      <div style={{ width: '50px', height: '50px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        {item.product_image_url ? (
+                          <img src={item.product_image_url} alt={item.product_title_snapshot} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <svg style={{ width: '1.25rem', color: 'rgba(255,255,255,0.1)' }} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
                       <div style={{ fontWeight: 600 }}>{item.product_title_snapshot || 'Product Name'}</div>
                       <div style={{ color: 'var(--text-muted)', textAlign: 'right' }}>x{item.quantity}</div>
                       <div style={{ textAlign: 'right', fontWeight: 600 }}>฿{(item.unit_price_snapshot * item.quantity).toLocaleString()}</div>
