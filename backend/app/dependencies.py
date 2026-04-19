@@ -1,7 +1,3 @@
-"""
-Dependency injection functions for FastAPI routes.
-Provides authentication, authorization, and common database operations.
-"""
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -14,24 +10,10 @@ from app.utils.security import decode_access_token
 
 security = HTTPBearer()
 
-
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
-    """
-    Get currently authenticated user from JWT token.
-    
-    Args:
-        credentials: HTTP Bearer token from request
-        db: Database session
-        
-    Returns:
-        Authenticated User object
-        
-    Raises:
-        HTTPException: If token is invalid or user not found
-    """
     token = credentials.credentials
     payload = decode_access_token(token)
     
@@ -50,9 +32,9 @@ def get_current_user(
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    # jose may return `sub` as a string. Convert safely for DB lookup.
+        
     try:
-        user_id_int = int(user_id)  # type: ignore[arg-type]
+        user_id_int = int(user_id)  
     except (TypeError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -71,11 +53,9 @@ def get_current_user(
     
     return user
 
-
 def get_current_buyer(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Verify current user is a buyer."""
     if current_user.role != UserRole.BUYER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -83,22 +63,9 @@ def get_current_buyer(
         )
     return current_user
 
-
 def get_current_active_seller(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """
-    Verify current user is an approved seller.
-    
-    Args:
-        current_user: Authenticated user
-        
-    Returns:
-        User object if seller is approved
-        
-    Raises:
-        HTTPException: If user is not a seller or not approved
-    """
     if current_user.role != UserRole.SELLER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -113,22 +80,9 @@ def get_current_active_seller(
     
     return current_user
 
-
 def get_current_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """
-    Verify current user is an admin.
-    
-    Args:
-        current_user: Authenticated user
-        
-    Returns:
-        User object if admin
-        
-    Raises:
-        HTTPException: If user is not an admin
-    """
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -137,24 +91,10 @@ def get_current_admin(
     
     return current_user
 
-
 def get_user_store(
     current_user: User = Depends(get_current_active_seller),
     db: Session = Depends(get_db)
 ) -> Store:
-    """
-    Get the store owned by the current seller.
-    
-    Args:
-        current_user: Authenticated seller
-        db: Database session
-        
-    Returns:
-        Store object owned by the user
-        
-    Raises:
-        HTTPException: If seller doesn't have a store
-    """
     store = db.query(Store).filter(Store.owner_id == current_user.id).first()
     
     if store is None:
@@ -165,26 +105,11 @@ def get_user_store(
     
     return store
 
-
 def verify_store_ownership(
     store_id: int,
     current_user: User = Depends(get_current_active_seller),
     db: Session = Depends(get_db)
 ) -> Store:
-    """
-    Verify that the current user owns the specified store.
-    
-    Args:
-        store_id: ID of the store to verify
-        current_user: Authenticated seller
-        db: Database session
-        
-    Returns:
-        Store object if ownership verified
-        
-    Raises:
-        HTTPException: If store not found or not owned by user
-    """
     store = db.query(Store).filter(Store.id == store_id).first()
     
     if store is None:
@@ -201,31 +126,15 @@ def verify_store_ownership(
     
     return store
 
-
 class Pagination:
-    """
-    Pagination helper for list endpoints.
-    """
     def __init__(self, page: int = 1, limit: int = 20):
         from app.config import settings
-        
         self.page = max(1, page)
         self.limit = min(limit, settings.MAX_PAGE_SIZE)
         self.offset = (self.page - 1) * self.limit
     
     def get_response(self, total: int, items: list) -> dict:
-        """
-        Create pagination response dict.
-        
-        Args:
-            total: Total number of items
-            items: List of items for current page
-            
-        Returns:
-            Dictionary with pagination metadata
-        """
         pages = (total + self.limit - 1) // self.limit
-        
         return {
             "items": items,
             "total": total,

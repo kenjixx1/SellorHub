@@ -83,7 +83,7 @@ export default function ExplorePage() {
   return (
     <div className="explore-page-wrapper" style={{ padding: '2rem 5%' }}>
       <header className="explore-header" style={{ display: searchQuery ? 'none' : 'block', textAlign: 'left', marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.5rem', background: 'linear-gradient(135deg, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.5rem', color: 'var(--text)' }}>
           Explore Marketplace
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>

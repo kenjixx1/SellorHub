@@ -19,9 +19,6 @@ Base = declarative_base()
 
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    FastAPI dependency: yield a DB session and close it when the request ends.
-    """
     db = SessionLocal()
     try:
         yield db
