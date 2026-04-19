@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { storeService } from '../lib/services/storeService'
 import { ratingService } from '../lib/services/ratingService'
+import '../css/PublicStorePage.css'
+import '../css/components.css'
 import type { StoreSummaryRating } from '../lib/types'
 import { Product } from '../lib/models/Product'
 import { Store } from '../lib/models/Store'
@@ -9,7 +11,7 @@ import { ProductGroup } from '../lib/models/ProductGroup'
 import { Rating } from '../lib/models/Rating'
 import { ApiError, API_BASE_URL } from '../lib/api'
 
-// ── Product card (rectangular) ────────────────────────────────────────────────
+
 
 function ProductCard({ product }: { product: Product }) {
   const thumbnail = product.primaryImage()
@@ -49,7 +51,7 @@ function ProductCard({ product }: { product: Product }) {
   )
 }
 
-// ── Product section (one per group) ──────────────────────────────────────────
+
 
 function ProductSection({
   id,
@@ -74,7 +76,7 @@ function ProductSection({
   )
 }
 
-// ── Store logo placeholder ────────────────────────────────────────────────────
+
 
 function StoreLogo({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
   if (logoUrl) {
@@ -114,13 +116,13 @@ function StoreLogo({ name, logoUrl }: { name: string; logoUrl?: string | null })
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+
 
 const discoveryStyles = `
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Custom Dropdown Animations */
+  
   @keyframes dropdown-slide-down {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -154,7 +156,7 @@ function CategoryDropdown({
   const [isOpen, setIsOpen] = useState(false)
   
   const currentLabel = activeId === null 
-    ? 'All Categories' 
+    ? 'Categories' 
     : (activeId === -1 ? 'Uncategorized' : groups.find(g => g.id === activeId)?.name || 'Category')
 
   return (
@@ -228,7 +230,7 @@ function CategoryDropdown({
                 cursor: 'pointer'
               }}
             >
-              All Categories
+              Categories
             </button>
             
             {groups.map(g => (
@@ -294,7 +296,7 @@ export default function PublicStorePage() {
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Discovery states
+
   const [activeGroupId, setActiveGroupId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -338,7 +340,7 @@ export default function PublicStorePage() {
     return () => { cancelled = true }
   }, [slug])
 
-  // ── Loading ──────────────────────────────────────────────────────────────────
+
 
   if (loading) {
     return (
@@ -362,7 +364,7 @@ export default function PublicStorePage() {
     )
   }
 
-  // ── Not found ────────────────────────────────────────────────────────────────
+
 
   if (notFound) {
     return (
@@ -381,7 +383,7 @@ export default function PublicStorePage() {
     )
   }
 
-  // ── API error ────────────────────────────────────────────────────────────────
+
 
   if (error || !store) {
     return (
@@ -395,7 +397,7 @@ export default function PublicStorePage() {
     )
   }
 
-  // ── Build grouped sections client-side ───────────────────────────────────────
+
 
   const groupedProducts: Record<number, Product[]> = {}
   const ungroupedProducts: Product[] = []
@@ -411,12 +413,12 @@ export default function PublicStorePage() {
 
   const hasAnyProducts = products.length > 0
 
-  // ── Full page ────────────────────────────────────────────────────────────────
+
 
   return (
     <div className="store-page-wrapper">
 
-      {/* Store header */}
+      {}
       <div className="store-header">
         <div className="store-header-inner">
           <StoreLogo name={store.name} logoUrl={store.logo_url} />
@@ -448,10 +450,10 @@ export default function PublicStorePage() {
 
       <style>{discoveryStyles}</style>
 
-      {/* Catalog */}
+      {}
       <div className="store-catalog" style={{ marginTop: '2rem' }}>
         
-        {/* Discovery / Filter Bar */}
+        {}
         {hasAnyProducts && (
           <div style={{ 
             display: 'flex', 
@@ -486,7 +488,7 @@ export default function PublicStorePage() {
           </div>
         )}
 
-        {/* Empty store */}
+        {}
         {!hasAnyProducts && (
           <div
             style={{
@@ -505,7 +507,7 @@ export default function PublicStorePage() {
           </div>
         )}
 
-        {/* Grouped sections */}
+        {}
         {groups.map((group) => {
           const groupProds = groupedProducts[group.id] ?? []
           
@@ -519,7 +521,7 @@ export default function PublicStorePage() {
           )
         })}
 
-        {/* Ungrouped products */}
+        {}
         {ungroupedProducts.length > 0 && (
           <ProductSection
             id="group-others"
@@ -528,7 +530,7 @@ export default function PublicStorePage() {
           />
         )}
 
-        {/* Reviews Section */}
+        {}
         {ratings && ratings.total_ratings > 0 && (
           <section style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
              <h2 className="store-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

@@ -6,6 +6,7 @@ import { ratingService } from '../lib/services/ratingService'
 import { Product } from '../lib/models/Product'
 import { Store } from '../lib/models/Store'
 import { useSearch } from '../main'
+import '../css/ExplorePage.css'
 
 export default function ExplorePage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -18,7 +19,7 @@ export default function ExplorePage() {
   const [debouncedMinPrice, setDebouncedMinPrice] = useState<number | undefined>(undefined)
   const [debouncedMaxPrice, setDebouncedMaxPrice] = useState<number | undefined>(undefined)
 
-  // Debounce search input and prices
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery)
@@ -51,7 +52,7 @@ export default function ExplorePage() {
         }, {})
         setStores(storeMap)
 
-        // Fetch ratings for unique stores present in results
+
         const uniqueStoreIds = Array.from(new Set(productItems.map((p: any) => p.store_id)))
         const ratingsResults = await Promise.all(
           uniqueStoreIds.map(async (sid: any) => {

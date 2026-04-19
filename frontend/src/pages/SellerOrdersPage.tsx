@@ -108,7 +108,7 @@ export default function SellerOrdersPage() {
         </div>
       )}
 
-      {/* Tabs */}
+      {}
       <div style={{
         display: 'flex',
         gap: '1rem',
@@ -155,7 +155,7 @@ export default function SellerOrdersPage() {
               border: '1px solid var(--border)',
               overflow: 'hidden'
             }}>
-              {/* Card Header */}
+              {}
               <div style={{
                 padding: '1.25rem',
                 background: 'rgba(255,255,255,0.02)',
@@ -182,7 +182,7 @@ export default function SellerOrdersPage() {
                 </div>
               </div>
 
-              {/* Items Section */}
+              {}
               <div style={{ padding: '1.25rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {order.items.map(item => (
@@ -195,7 +195,7 @@ export default function SellerOrdersPage() {
                 </div>
               </div>
 
-              {/* Order Footer */}
+              {}
               <div style={{
                 padding: '1.25rem',
                 borderTop: '1px dashed var(--border)',
@@ -214,7 +214,7 @@ export default function SellerOrdersPage() {
                 </div>
               </div>
 
-              {/* Status Actions */}
+              {}
               <div style={{
                 padding: '1.25rem',
                 background: 'rgba(255,255,255,0.03)',

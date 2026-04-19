@@ -13,7 +13,7 @@ export default function ManageCategoriesPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Form states
+
   const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingName, setEditingName] = useState('')
@@ -87,7 +87,7 @@ export default function ManageCategoriesPage() {
 
   return (
     <div className="page-container" style={{ maxWidth: 700 }}>
-      {/* Header */}
+      {}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
         <Link to="/seller" className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
           ← Back to Dashboard
@@ -109,7 +109,7 @@ export default function ManageCategoriesPage() {
         </div>
       )}
 
-      {/* Quick Add form */}
+      {}
       <div style={{ 
         padding: '1.5rem', 
         background: 'rgba(255,255,255,0.02)', 
@@ -134,7 +134,7 @@ export default function ManageCategoriesPage() {
         </form>
       </div>
 
-      {/* List */}
+      {}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <div style={{ 
            display: 'flex', 

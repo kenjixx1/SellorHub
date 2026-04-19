@@ -17,7 +17,7 @@ export default function CheckoutPage() {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null)
   const [isChangingAddress, setIsChangingAddress] = useState(false)
   
-  const [items, setItems] = useState<any[]>([]) // CartItem[] or DirectCheckoutItem[]
+  const [items, setItems] = useState<any[]>([])
   const [stores, setStores] = useState<Record<number, Store>>({})
   const [loading, setLoading] = useState(true)
   const [placingOrder, setPlacingOrder] = useState(false)
@@ -34,13 +34,13 @@ export default function CheckoutPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // 1. Load AddressResponsees
+
       const addrList = await addressService.getAll(token!)
       const addrModels = addrList.map(Address.fromDto)
       setAddresses(addrModels)
       setSelectedAddress(addrModels.find(a => a.isDefault()) || addrModels[0] || null)
 
-      // 2. Load Checkout Items
+
       const buyNowStr = sessionStorage.getItem('buy_now_item')
       const cartIdsStr = sessionStorage.getItem('checkout_item_ids')
 
@@ -52,13 +52,13 @@ export default function CheckoutPage() {
         const cartData = await cartService.getCart(token!)
         checkoutItems = cartData.items.filter(i => cartIds.includes(i.id))
       } else {
-        // No items to checkout, go back to cart
+
         navigate('/cart')
         return
       }
       setItems(checkoutItems)
 
-      // 3. Resolve Store Metadata
+
       const storeIds = Array.from(new Set(checkoutItems.map(i => i.product.store_id)))
       const storeList = await storeService.listStores({ limit: 100 })
       const storeMap: Record<number, Store> = {}
@@ -100,7 +100,7 @@ export default function CheckoutPage() {
     
     setPlacingOrder(true)
     try {
-      // Multiple stores = Multiple orders
+
       const orderPromises = groupedItems.map(group => {
         const isDirect = sessionStorage.getItem('buy_now_item') !== null
         if (isDirect) {
@@ -111,15 +111,15 @@ export default function CheckoutPage() {
             selectedAddress.id
           )
         } else {
-          // Note: Backend might not support partial cart checkout per store easily if items are not exactly the same.
-          // However, the common pattern is order-per-store.
+
+
           return orderService.createFromCart(token!, group.storeId, selectedAddress.id)
         }
       })
 
       const results = await Promise.all(orderPromises)
       
-      // Clear session
+
       sessionStorage.removeItem('buy_now_item')
       sessionStorage.removeItem('checkout_item_ids')
       
@@ -160,10 +160,10 @@ export default function CheckoutPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: '2rem', alignItems: 'start' }}>
         
-        {/* Main Content */}
+        {}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          {/* AddressResponse Section */}
+          {}
           <section style={{ background: 'var(--glass)', borderRadius: '1rem', border: '1px solid var(--border)', overflow: 'hidden' }}>
             <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                <h3 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -221,7 +221,7 @@ export default function CheckoutPage() {
             </div>
           </section>
 
-          {/* Product Items Grouped by Store */}
+          {}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {groupedItems.map(group => (
               <section key={group.storeId} style={{ background: 'var(--glass)', borderRadius: '1rem', border: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -257,10 +257,10 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Sidebar Summary */}
+        {}
         <aside style={{ position: 'sticky', top: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          {/* Payment Method */}
+          {}
           <section style={{ background: 'var(--glass)', borderRadius: '1rem', border: '1px solid var(--border)', padding: '1.5rem' }}>
             <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1rem' }}>Payment Method</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -297,7 +297,7 @@ export default function CheckoutPage() {
             </div>
           </section>
 
-          {/* Final Summary */}
+          {}
           <section style={{ background: 'var(--glass)', borderRadius: '1rem', border: '1px solid var(--primary)', padding: '1.5rem', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
              <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1.1rem' }}>Order Summary</h3>
              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>

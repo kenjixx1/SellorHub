@@ -107,7 +107,7 @@ export default function OrdersPage() {
 
   return (
     <div className="page-container" style={{ maxWidth: '800px' }}>
-      {/* Header */}
+      {}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
         <button
           onClick={() => navigate('/explore')}
@@ -132,7 +132,7 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Shopee-style Navigation Tabs */}
+      {}
       <div style={{
         display: 'flex',
         marginBottom: '1.5rem',
@@ -206,7 +206,7 @@ export default function OrdersPage() {
                 onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
               >
-                {/* Store Header */}
+                {}
                 <div style={{
                   padding: '1rem 1.25rem',
                   borderBottom: '1px solid var(--border)',
@@ -228,7 +228,7 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
-                {/* Items Summary */}
+                {}
                 <div style={{ padding: '1.25rem' }}>
                   {order.items.map((item, idx) => (
                     <div key={item.id} style={{
@@ -255,7 +255,7 @@ export default function OrdersPage() {
                   ))}
                 </div>
 
-                {/* Footer and Summary */}
+                {}
                 <div style={{
                   padding: '1.25rem',
                   background: 'rgba(0,0,0,0.1)',
@@ -269,7 +269,7 @@ export default function OrdersPage() {
                   <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>฿{order.formattedTotal()}</span>
                 </div>
 
-                {/* CTA footer */}
+                {}
                 <div style={{
                   padding: '0.75rem 1.25rem',
                   display: 'flex',
@@ -335,7 +335,7 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Rating Modal */}
+      {}
       {ratingOrder && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: '1.5rem', width: '100%', maxWidth: '450px', padding: '2rem', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
@@ -344,7 +344,7 @@ export default function OrdersPage() {
               How was your purchase from <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{stores[ratingOrder.store_id]?.name || 'the store'}</span>?
             </p>
 
-            {/* Star Rating */}
+            {}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
               {[1, 2, 3, 4, 5].map(star => (
                 <button

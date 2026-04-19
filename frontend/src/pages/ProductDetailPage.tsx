@@ -19,13 +19,13 @@ export default function ProductDetailPage() {
   const [storeRating, setStoreRating] = useState<{ score: number; count: number } | null>(null)
   const [activeImage, setActiveImage] = useState(0)
 
-  // Cart state
+
   const [cartLoading, setCartLoading] = useState(false)
   const [cartSuccess, setCartSuccess] = useState(false)
   const [buyQuantity, setBuyQuantity] = useState(1)
   const { token } = useAuth()
 
-  // Inquiry form state
+
   const [inquiryName, setInquiryName] = useState('')
   const [inquiryEmail, setInquiryEmail] = useState('')
   const [inquiryMessage, setInquiryMessage] = useState('')
@@ -40,7 +40,7 @@ export default function ProductDetailPage() {
         const data = await productService.getById(parseInt(id))
         setProduct(Product.fromDto(data))
 
-        // Fetch store info and rating in parallel
+
         const [allStores, ratingData] = await Promise.all([
           storeService.listStores(),
           ratingService.getStoreRatings(data.store_id)
@@ -106,7 +106,7 @@ export default function ProductDetailPage() {
     }
     if (!product) return
 
-    // Store as direct checkout item
+
     const directItem = {
       product_id: product.id,
       quantity: buyQuantity,
@@ -121,7 +121,7 @@ export default function ProductDetailPage() {
       }
     }
     sessionStorage.setItem('buy_now_item', JSON.stringify(directItem))
-    sessionStorage.removeItem('checkout_item_ids') // Clear cart-based checkout
+    sessionStorage.removeItem('checkout_item_ids')
     navigate('/checkout')
   }
 
@@ -147,7 +147,7 @@ export default function ProductDetailPage() {
       </button>
 
       <div className="product-detail-flex" style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
-        {/* Gallery Section - 60% approx */}
+        {}
         <div className="gallery-section" style={{ flex: '1.2', minWidth: '350px' }}>
           <div className="main-image-viewport" style={{ background: 'var(--bg-secondary)', borderRadius: '12px', overflow: 'hidden', aspectRatio: '1/1', border: '1px solid var(--border)', position: 'relative' }}>
             {product.images && product.images.length > 0 ? (
@@ -157,7 +157,7 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Thumbnails */}
+          {}
           {product.images && product.images.length > 1 && (
             <div className="thumbnail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', marginTop: '1rem' }}>
               {product.images.map((img, idx) => (
@@ -181,7 +181,7 @@ export default function ProductDetailPage() {
           )}
         </div>
 
-        {/* Info Section - 40% approx */}
+        {}
         <div className="info-section" style={{ flex: '0.8', minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="info-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>

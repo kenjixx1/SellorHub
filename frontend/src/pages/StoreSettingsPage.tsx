@@ -13,7 +13,7 @@ export default function StoreSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  // false = create mode, true = edit mode
+
   const [isEdit, setIsEdit] = useState(false)
 
   const [name, setName] = useState('')
@@ -23,7 +23,7 @@ export default function StoreSettingsPage() {
 
   const [submitting, setSubmitting] = useState(false)
   
-  // Validation checks
+
   const [slugTouched, setSlugTouched] = useState(false)
   const isValidSlug = /^[a-z0-9-]+$/.test(slug) && slug.length > 0
 
@@ -33,7 +33,7 @@ export default function StoreSettingsPage() {
     async function init() {
       try {
         const dashboard = await sellerService.getDashboard(activeToken)
-        // Store exists! Fetch full profile
+
         const profile = await storeService.getProfile(dashboard.store.slug)
         setIsEdit(true)
         setName(profile.name)
@@ -43,7 +43,7 @@ export default function StoreSettingsPage() {
         setLoading(false)
       } catch (err: any) {
         if (err instanceof ApiError && err.status === 404) {
-          // No store, create mode
+
           setIsEdit(false)
           setLoading(false)
         } else {
@@ -98,7 +98,7 @@ export default function StoreSettingsPage() {
           logo_url: logoUrl || undefined,
         })
       }
-      navigate('/seller') // go back to dashboard
+      navigate('/seller')
     } catch (err: any) {
       setError(err?.message ?? 'Failed to save store.')
       setSubmitting(false)

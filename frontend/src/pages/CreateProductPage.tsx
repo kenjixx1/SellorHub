@@ -6,12 +6,12 @@ import { productService } from '../lib/services/productService'
 import type { ProductStatus } from '../lib/types'
 import { ProductGroup } from '../lib/models/ProductGroup'
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+
 
 interface ImageSlot {
   file: File | null
-  imageUrl: string         // for URL upload
-  preview: string | null   // object URL for preview (if file selected)
+  imageUrl: string
+  preview: string | null
   dragOver: boolean
 }
 
@@ -21,7 +21,7 @@ function createEmptySlot(): ImageSlot {
   return { file: null, imageUrl: '', preview: null, dragOver: false }
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+
 
 export default function CreateProductPage() {
   const { user, token, loading: authLoading } = useAuth()
@@ -34,7 +34,7 @@ export default function CreateProductPage() {
   const [submitting, setSubmitting] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
 
-  // Form Fields
+
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('')
   const [description, setDescription] = useState('')
@@ -45,13 +45,13 @@ export default function CreateProductPage() {
   const [newGroupName, setNewGroupName] = useState('')
   const [creatingGroup, setCreatingGroup] = useState(false)
 
-  // Carousel State
+
   const [slots, setSlots] = useState<ImageSlot[]>(
     Array.from({ length: MAX_IMAGES }, createEmptySlot)
   )
   const [currentIndex, setCurrentIndex] = useState(0)
 
-  // Hidden file inputs — one per slot
+
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>(Array(MAX_IMAGES).fill(null))
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function CreateProductPage() {
         const data = await sellerService.getMyProductGroups(activeToken)
         setGroups(data.map(ProductGroup.fromDto))
       } catch (err) {
-        // Soft error, just log. The select will just be empty.
+
         console.error('Failed to load groups', err)
       } finally {
         setLoadingGroups(false)
@@ -71,12 +71,12 @@ export default function CreateProductPage() {
     loadGroups()
   }, [activeToken, user])
 
-  // Revoke object URLs on unmount to avoid memory leaks
+
   useEffect(() => {
     return () => {
       slots.forEach(s => { if (s.preview) URL.revokeObjectURL(s.preview) })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [])
 
   if (authLoading || loadingGroups) return <div className="page-container">Loading…</div>
@@ -84,10 +84,10 @@ export default function CreateProductPage() {
   if (!user || user.role !== 'seller') return <Navigate to="/" replace />
   if (!user.selling_approve) return <Navigate to="/seller" replace />
 
-  // ── Slot helpers ─────────────────────────────────────────────────────────────
+
 
   function assignFile(index: number, file: File) {
-    // Revoke old preview if any
+
     const old = slots[index].preview
     if (old) URL.revokeObjectURL(old)
 
@@ -110,7 +110,7 @@ export default function CreateProductPage() {
   function removeSlot(index: number) {
     const old = slots[index].preview
     if (old) URL.revokeObjectURL(old)
-    // Reset the hidden input value
+
     const inp = fileInputRefs.current[index]
     if (inp) inp.value = ''
     setSlots(prev => {
@@ -142,7 +142,7 @@ export default function CreateProductPage() {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
       const blob = await response.blob()
 
-      // Determine extension from content-type or fallback to jpg
+
       let ext = 'jpg'
       if (blob.type.includes('png')) ext = 'png'
       if (blob.type.includes('webp')) ext = 'webp'
@@ -153,13 +153,13 @@ export default function CreateProductPage() {
     }
   }
 
-  // ── Submit ────────────────────────────────────────────────────────────────────
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    // Basic validation
+
     if (!title || !price || isNaN(Number(price))) {
       setError('Please provide a valid title and price.')
       return
@@ -168,7 +168,7 @@ export default function CreateProductPage() {
     setSubmitting(true)
 
     try {
-      // 1. Create the product first
+
       const valGroupId = groupId ? Number(groupId) : null
       const valStock = stock ? Number(stock) : null
 
@@ -181,7 +181,7 @@ export default function CreateProductPage() {
         group_id: valGroupId,
       })
 
-      // 2. Upload images sequentially (only filled slots)
+
       const filledSlots = slots
         .map((s, i) => ({ slot: s, position: i }))
         .filter(({ slot }) => slot.file !== null || slot.imageUrl.trim() !== '')
@@ -192,7 +192,7 @@ export default function CreateProductPage() {
         
         let fileToUpload = slot.file
 
-        // If they provided a URL but no file, try fetching it
+
         if (!fileToUpload && slot.imageUrl) {
           fileToUpload = await fetchImageAsFile(slot.imageUrl)
         }
@@ -202,7 +202,7 @@ export default function CreateProductPage() {
         }
       }
 
-      // Success, go back to dashboard
+
       navigate('/seller')
     } catch (err: any) {
       setError(err?.message ?? 'Failed to create product.')
@@ -214,7 +214,7 @@ export default function CreateProductPage() {
   const filledCount = slots.filter(s => s.file !== null || s.imageUrl.trim() !== '').length
   const currentSlot = slots[currentIndex]
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+
 
   return (
     <div className="page-container">
@@ -243,7 +243,7 @@ export default function CreateProductPage() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         
-        {/* Core Info */}
+        {}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
             <label className="form-label">Product Title *</label>
@@ -295,7 +295,7 @@ export default function CreateProductPage() {
           />
         </div>
 
-        {/* Categories and Status */}
+        {}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -392,7 +392,7 @@ export default function CreateProductPage() {
           </div>
         </div>
 
-        {/* ── Slideshow-Style Multi-Image Uploader ─────────────────────────── */}
+        {}
         <div style={{ 
           marginTop: '1rem', 
           padding: '1.5rem', 
@@ -420,7 +420,7 @@ export default function CreateProductPage() {
           </div>
 
           <div className="carousel-container" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Carousel Header (Arrows) */}
+            {}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button 
                 type="button" 
@@ -445,7 +445,7 @@ export default function CreateProductPage() {
               </button>
             </div>
 
-            {/* Center Panel (Image Preview / Add Zone) */}
+            {}
             <div style={{ 
               aspectRatio: '16/9', 
               border: '1px solid var(--border)', 
@@ -495,7 +495,7 @@ export default function CreateProductPage() {
                   gap: '1rem',
                   overflowY: 'auto'
                 }}>
-                   {/* Drag and Drop Zone */}
+                   {}
                    <div 
                      onDragOver={(e) => { e.preventDefault(); setDragOver(currentIndex, true) }}
                      onDragLeave={() => setDragOver(currentIndex, false)}
@@ -528,7 +528,7 @@ export default function CreateProductPage() {
                       <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
                    </div>
 
-                   {/* Upload By URL */}
+                   {}
                    <div style={{ width: '100%' }}>
                       <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.3rem' }}>Upload by URL</label>
                       <input 
@@ -544,7 +544,7 @@ export default function CreateProductPage() {
               )}
             </div>
 
-            {/* Hidden File Inputs per Slot */}
+            {}
             {slots.map((_, i) => (
                 <input
                   key={i}
@@ -557,7 +557,7 @@ export default function CreateProductPage() {
                 />
             ))}
 
-            {/* Dots Indicator */}
+            {}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem', marginTop: '0.5rem' }}>
                {slots.map((s, i) => (
                   <div 
@@ -585,7 +585,7 @@ export default function CreateProductPage() {
           </p>
         </div>
 
-        {/* Upload progress feedback */}
+        {}
         {uploadProgress && (
           <div style={{
             color: 'var(--accent)',
@@ -605,7 +605,7 @@ export default function CreateProductPage() {
           </div>
         )}
 
-        {/* Actions */}
+        {}
         <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
           <button 
             type="submit" 

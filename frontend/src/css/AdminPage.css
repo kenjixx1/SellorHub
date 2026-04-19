@@ -1,0 +1,26 @@
+
+@keyframes dropdown-slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.custom-dropdown-content {
+  animation: dropdown-slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-option { 
+  transition: all 0.2s ease; 
+}
+
+.dropdown-option:hover { 
+  background: rgba(255, 255, 255, 0.08); 
+  padding-left: 1rem; 
+}
+
+
+.admin-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+}

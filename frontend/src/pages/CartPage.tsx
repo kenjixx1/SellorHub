@@ -16,7 +16,7 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null)
   const [stores, setStores] = useState<Record<number, Store>>({})
 
-  // Selection state
+
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([])
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function CartPage() {
       const data = await cartService.getCart(token!)
       setCart(Cart.fromDto(data))
 
-      // Resolve store names
+
       const storeIds = Array.from(new Set(data.items.map(i => i.product.store_id)))
       await resolveStoreNames(storeIds)
 
@@ -47,8 +47,8 @@ export default function CartPage() {
     if (missingIds.length === 0) return
 
     try {
-      // Since we don't have a bulk-get-by-id, we'll try to find them in the stores list
-      // Or just fetch all stores (Marketplace typically doesn't have thousands in one cart context)
+
+
       const res = await storeService.listStores({ limit: 100 })
       const storeMap: Record<number, Store> = { ...stores }
       res.items.forEach(s => {
@@ -62,7 +62,7 @@ export default function CartPage() {
     }
   }
 
-  // Handle Selection
+
   const toggleItem = (id: number) => {
     setSelectedItemIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -88,7 +88,7 @@ export default function CartPage() {
     }
   }
 
-  // Operations
+
   const handleQuantity = async (item: CartItem, delta: number) => {
     if (!token) return
     const newQty = item.quantity + delta
@@ -114,7 +114,7 @@ export default function CartPage() {
     }
   }
 
-  // Group by store
+
   const groups = useMemo(() => {
     if (!cart) return []
     const map: Record<number, CartItem[]> = {}
@@ -130,7 +130,7 @@ export default function CartPage() {
     }))
   }, [cart, stores])
 
-  // Calculation
+
   const selectedItems = (cart?.items || []).filter(i => selectedItemIds.includes(i.id))
   const totalAmount = selectedItems.reduce((sum, i) => sum + (Number(i.product.price) * i.quantity), 0)
 
@@ -180,7 +180,7 @@ export default function CartPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {/* Header row */}
+          {}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '45px 3fr 1fr 1.2fr 1.2fr 45px',
@@ -194,7 +194,7 @@ export default function CartPage() {
             textTransform: 'uppercase',
             letterSpacing: '0.05em'
           }}>
-            <div /> {/* Spacer for checkboxes */}
+            <div /> {}
             <div>Product</div>
             <div style={{ textAlign: 'center' }}>Price</div>
             <div style={{ textAlign: 'center' }}>Quantity</div>
@@ -202,7 +202,7 @@ export default function CartPage() {
             <div></div>
           </div>
 
-          {/* Store Groups */}
+          {}
           {groups.map(group => (
             <div key={group.storeId} style={{
               background: 'var(--glass)',
@@ -211,7 +211,7 @@ export default function CartPage() {
               overflow: 'hidden',
               boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
             }}>
-              {/* Store Header */}
+              {}
               <div style={{
                 padding: '1rem 1.25rem',
                 borderBottom: '1px solid var(--border)',
@@ -234,7 +234,7 @@ export default function CartPage() {
                 </Link>
               </div>
 
-              {/* Items */}
+              {}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {group.items.map(item => (
                   <div key={item.id} style={{
@@ -329,11 +329,11 @@ export default function CartPage() {
             </div>
           ))}
 
-          <div style={{ height: '2rem' }}></div> {/* Spacer */}
+          <div style={{ height: '2rem' }}></div> {}
         </div>
       )}
 
-      {/* Sticky Footer */}
+      {}
       {cart && cart.items.length > 0 && (
         <div style={{
           position: 'fixed',

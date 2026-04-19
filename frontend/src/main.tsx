@@ -1,8 +1,11 @@
-import { StrictMode, createContext, useContext, useState, useEffect, useRef } from 'react'
+import { StrictMode, createContext, useContext, useState } from 'react'
 import { API_BASE_URL } from './lib/api'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Link, Route, Routes, useNavigate, useLocation } from 'react-router-dom'
-import './index.css'
+import './css/global.css'
+import './css/layout.css'
+import './css/components.css'
+import './css/HomePage.css'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import AdminPage from './pages/AdminPage'
@@ -24,7 +27,7 @@ import OrdersPage from './pages/OrdersPage'
 import ManageCategoriesPage from './pages/ManageCategoriesPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 
-// Global search context
+
 type SearchContextType = {
   searchQuery: string
   setSearchQuery: (q: string) => void
@@ -212,18 +215,8 @@ function GlobalSearchBar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [showPriceFilter, setShowPriceFilter] = useState(false)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
 
-  const handleMouseEnter = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    setShowPriceFilter(true)
-  }
-
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setShowPriceFilter(false)
-    }, 400) // 400ms delay to allow crossing the gap
-  }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
@@ -238,10 +231,6 @@ function GlobalSearchBar() {
     }
   }
 
-  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSortBy(e.target.value)
-    handleFilterChange()
-  }
 
   const handleMinPrice = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMinPrice(e.target.value)
@@ -279,35 +268,71 @@ function GlobalSearchBar() {
         </svg>
       </div>
       
-      <select 
-        className="form-input" 
-        value={sortBy} 
-        onChange={handleSortChange}
-        style={{ 
-          width: '130px', 
-          height: '40px', 
-          borderRadius: '99px',
-          padding: '0 2rem 0 1rem', 
-          background: 'rgba(0,0,0,0.3)',
-          border: '1px solid var(--border)',
-          cursor: 'pointer',
-          fontSize: '0.85rem'
-        }}
-      >
-        <option value="newest">Newest</option>
-        <option value="popular">Popular</option>
-        <option value="price_asc">Price L-H</option>
-        <option value="price_desc">Price H-L</option>
-      </select>
+      {}
+      <div style={{ position: 'relative' }}>
+         <button
+           type="button"
+           onClick={() => setShowSortDropdown(!showSortDropdown)}
+           style={{ 
+             display: 'flex', alignItems: 'center', gap: '0.5rem',
+             height: '40px', borderRadius: '99px', padding: '0 1rem', 
+             background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)',
+             cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text)',
+             whiteSpace: 'nowrap', transition: 'all 0.2s'
+           }}
+         >
+           {sortBy === 'newest' ? 'Newest' : sortBy === 'popular' ? 'Popular' : sortBy === 'price_asc' ? 'Price L-H' : 'Price H-L'}
+           <svg 
+             style={{ width: '0.8rem', height: '0.8rem', transition: 'transform 0.2s', transform: showSortDropdown ? 'rotate(180deg)' : 'rotate(0)' }} 
+             fill="none" stroke="currentColor" viewBox="0 0 24 24"
+           >
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+           </svg>
+         </button>
+
+         {showSortDropdown && (
+           <>
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }} onClick={() => setShowSortDropdown(false)} />
+              <div 
+                className="custom-dropdown-content"
+                style={{
+                  position: 'absolute', top: 'calc(100% + 0.5rem)', right: 0, width: '140px',
+                  background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(16px)',
+                  border: '1px solid var(--border)', borderRadius: '0.75rem',
+                  boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 101, padding: '0.35rem'
+                }}
+              >
+                {[
+                  { id: 'newest', label: 'Newest' },
+                  { id: 'popular', label: 'Popular' },
+                  { id: 'price_asc', label: 'Price L-H' },
+                  { id: 'price_desc', label: 'Price H-L' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    className="dropdown-option"
+                    onClick={() => { setSortBy(opt.id); setShowSortDropdown(false); handleFilterChange(); }}
+                    style={{
+                      width: '100%', textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                      border: 'none', background: sortBy === opt.id ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                      color: sortBy === opt.id ? 'var(--primary)' : 'var(--text)', fontSize: '0.85rem', cursor: 'pointer'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+           </>
+         )}
+      </div>
 
       <div 
         className="nav-profile dropdown" 
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         style={{ position: 'relative' }}
       >
         <button 
           className="form-input dropdown-trigger" 
+          onClick={() => setShowPriceFilter(!showPriceFilter)}
           style={{ 
             height: '40px', 
             borderRadius: '99px',
@@ -330,18 +355,20 @@ function GlobalSearchBar() {
         </button>
 
         {showPriceFilter && (
-          <div className="dropdown-menu" style={{ 
+          <>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }} onClick={() => setShowPriceFilter(false)} />
+          <div className="dropdown-menu custom-dropdown-content" style={{ 
             position: 'absolute',
-            zIndex: 50,
-            left: '50%', 
-            transform: 'translateX(-50%)',
+            zIndex: 101,
+            right: 0,
             top: 'calc(100% + 0.5rem)', 
             width: '260px', 
             padding: '1rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            background: 'var(--bg-card)',
+            background: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(16px)',
             border: '1px solid var(--border)',
             borderRadius: '0.75rem',
             boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)'
@@ -366,6 +393,7 @@ function GlobalSearchBar() {
               style={{ width: '100px' }}
             />
           </div>
+          </>
         )}
       </div>
     </div>

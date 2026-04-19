@@ -169,7 +169,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Avatar section */}
+      {}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
         <div
           style={{
@@ -266,7 +266,7 @@ export default function ProfilePage() {
             )}
           </label>
 
-          {/* Add/Edit Form Inline */}
+          {}
           {(isAddingAddress || editingAddress) && (
             <div
               style={{

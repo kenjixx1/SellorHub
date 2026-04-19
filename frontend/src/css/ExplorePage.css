@@ -1,0 +1,34 @@
+
+.explore-page-wrapper {
+  width: 100%;
+  padding: 2rem 1rem;
+}
+
+@media (min-width: 1200px) {
+  .explore-page-wrapper { padding: 3rem 4rem; }
+}
+
+.explore-header {
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.full-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .full-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .full-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+  }
+}

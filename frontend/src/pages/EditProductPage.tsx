@@ -17,7 +17,7 @@ export default function EditProductPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Form Fields
+
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('')
   const [description, setDescription] = useState('')
@@ -115,7 +115,7 @@ export default function EditProductPage() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         
-        {/* Core Info */}
+        {}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
             <label className="form-label">Product Title *</label>
@@ -164,7 +164,7 @@ export default function EditProductPage() {
           />
         </div>
 
-        {/* Categories and Status */}
+        {}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

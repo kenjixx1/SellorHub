@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { storeService } from '../lib/services/storeService'
+import '../css/StoresPage.css'
 import { Store } from '../lib/models/Store'
 
 const PAGE_SIZE = 20
 
-// ── Store logo / avatar ───────────────────────────────────────────────────────
+
 
 function StoreAvatar({ name, logoUrl, size = 56 }: { name: string; logoUrl?: string | null; size?: number }) {
   if (logoUrl) {
@@ -45,7 +46,7 @@ function StoreAvatar({ name, logoUrl, size = 56 }: { name: string; logoUrl?: str
   )
 }
 
-// ── Store card ────────────────────────────────────────────────────────────────
+
 
 function StoreCard({ store }: { store: Store }) {
   return (
@@ -77,7 +78,7 @@ function StoreCard({ store }: { store: Store }) {
   )
 }
 
-// ── Skeleton loading card ─────────────────────────────────────────────────────
+
 
 function SkeletonStoreCard() {
   return (
@@ -92,7 +93,7 @@ function SkeletonStoreCard() {
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+
 
 export default function StoresPage() {
   const [stores, setStores] = useState<Store[]>([])
@@ -104,7 +105,7 @@ export default function StoresPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Debounce search
+
   useEffect(() => {
     const t = setTimeout(() => {
       setDebouncedSearch(search)
@@ -133,7 +134,7 @@ export default function StoresPage() {
   return (
     <div className="dir-page-wrapper">
 
-      {/* Header */}
+      {}
       <div className="dir-page-header">
         <div>
           <h1 style={{ margin: '0 0 0.25rem', fontSize: '2rem', fontWeight: 800 }}>
@@ -144,7 +145,7 @@ export default function StoresPage() {
           </p>
         </div>
 
-        {/* Search */}
+        {}
         <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
           <input
             type="text"
@@ -170,7 +171,7 @@ export default function StoresPage() {
         </div>
       </div>
 
-      {/* Result count */}
+      {}
       {!loading && !error && (
         <p style={{ margin: '0 0 1.25rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
           {debouncedSearch
@@ -179,7 +180,7 @@ export default function StoresPage() {
         </p>
       )}
 
-      {/* Error */}
+      {}
       {error && (
         <div
           className="validation-hint invalid"
@@ -196,7 +197,7 @@ export default function StoresPage() {
         </div>
       )}
 
-      {/* Store list */}
+      {}
       <div className="dir-store-list">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <SkeletonStoreCard key={i} />)
@@ -234,7 +235,7 @@ export default function StoresPage() {
         }
       </div>
 
-      {/* Pagination */}
+      {}
       {!loading && totalPages > 1 && (
         <div className="dir-pagination">
           <button

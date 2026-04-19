@@ -17,6 +17,18 @@ export type AdminUser = {
   created_at: string
 }
 
+export type AdminProduct = {
+  id: number
+  title: string
+  price: number
+  status: 'active' | 'sold' | 'hidden'
+  store_id: number
+  created_at: string
+  store?: {
+    name: string
+  }
+}
+
 export type GetUsersFilters = {
   role?: 'buyer' | 'seller' | 'admin'
   search?: string
@@ -65,6 +77,39 @@ export class AdminService {
       token,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ approve }),
+    })
+  }
+
+  async deleteUser(token: string, userId: number): Promise<void> {
+    return apiClient.fetch<void>(`/api/admin/users/${userId}`, {
+      method: 'DELETE',
+      token,
+    })
+  }
+
+  async getProducts(token: string, status?: string, page: number = 1): Promise<AdminProduct[]> {
+    const params = new URLSearchParams()
+    if (status) params.set('status', status)
+    params.set('page', String(page))
+    params.set('limit', '50')
+    const res = await apiClient.fetch<PaginatedResponse<AdminProduct>>(
+      `/api/admin/products?${params.toString()}`,
+      { token },
+    )
+    return res.items
+  }
+
+  async hideProduct(token: string, productId: number): Promise<void> {
+    await apiClient.fetch(`/api/admin/products/${productId}/hide`, {
+      method: 'PUT',
+      token,
+    })
+  }
+
+  async unhideProduct(token: string, productId: number): Promise<void> {
+    await apiClient.fetch(`/api/admin/products/${productId}/unhide`, {
+      method: 'PUT',
+      token,
     })
   }
 }

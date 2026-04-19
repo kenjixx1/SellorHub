@@ -10,7 +10,7 @@ import { ProductGroup } from '../lib/models/ProductGroup'
 import { Inquiry } from '../lib/models/Inquiry'
 import { ApiError } from '../lib/api'
 
-// ── Tiny helpers ──────────────────────────────────────────────────────────────
+
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
@@ -104,7 +104,7 @@ const divider: React.CSSProperties = {
   marginTop: '2rem',
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+
 
 export default function SellerDashboardPage() {
   const { user, token, loading: authLoading } = useAuth()
@@ -183,10 +183,10 @@ export default function SellerDashboardPage() {
     fetchProducts()
     fetchGroups()
     fetchOrders()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [activeToken, user])
 
-  // ── Guards ──────────────────────────────────────────────────────────────────
+
 
   if (authLoading) {
     return <div className="page-container">Loading…</div>
@@ -196,7 +196,7 @@ export default function SellerDashboardPage() {
     return <Navigate to="/" replace />
   }
 
-  // Unapproved seller — show pending state, not crash
+
   if (!user.selling_approve) {
     return (
       <div className="page-container" style={{ maxWidth: 560, textAlign: 'center' }}>
@@ -222,7 +222,7 @@ export default function SellerDashboardPage() {
     )
   }
 
-  // Approved seller but no store yet — show onboarding CTA
+
   if (noStore) {
     return (
       <div className="page-container" style={{ maxWidth: 560, textAlign: 'center' }}>
@@ -248,7 +248,7 @@ export default function SellerDashboardPage() {
   return (
     <div className="page-container" style={{ maxWidth: 900 }}>
 
-      {/* ── Store header ──────────────────────────────────────────── */}
+      {}
       <div
         style={{
           display: 'flex',
@@ -285,7 +285,7 @@ export default function SellerDashboardPage() {
 
       {dashboardError && <SectionError msg={dashboardError} />}
 
-      {/* ── Overview stats ────────────────────────────────────────── */}
+      {}
       {dashboard && (
         <section>
           <SectionHeading title="Overview" />
@@ -300,7 +300,7 @@ export default function SellerDashboardPage() {
         </section>
       )}
 
-      {/* ── Recent orders ─────────────────────────────────────────── */}
+      {}
       <section style={divider}>
         <div
           style={{
@@ -358,7 +358,7 @@ export default function SellerDashboardPage() {
         )}
       </section>
 
-      {/* ── Recent inquiries ──────────────────────────────────────── */}
+      {}
       <section style={divider}>
         <div
           style={{
@@ -442,7 +442,7 @@ export default function SellerDashboardPage() {
         )}
       </section>
 
-      {/* ── Product preview ───────────────────────────────────────── */}
+      {}
       <section style={divider}>
         <div
           style={{
@@ -531,7 +531,7 @@ export default function SellerDashboardPage() {
         )}
       </section>
 
-      {/* ── Product groups ────────────────────────────────────────── */}
+      {}
       <section style={divider}>
         <div
           style={{
