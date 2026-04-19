@@ -15,3 +15,8 @@ class ProductGroup(Base):
 
     def __repr__(self):
         return f'<ProductGroup(id={self.id}, store_id={self.store_id}, name={self.name})>'
+
+
+p = ProductGroup()
+
+
