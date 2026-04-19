@@ -342,15 +342,15 @@ export default function CartPage() {
           transform: 'translateX(-50%)',
           width: 'calc(100% - 3rem)',
           maxWidth: '1000px',
-          background: 'rgba(18, 18, 18, 0.9)',
-          backdropFilter: 'blur(24px)',
-          border: '1px solid var(--primary)',
-          borderRadius: '1.25rem',
-          padding: '1.5rem 2.5rem',
+          background: 'var(--glass)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid var(--border)',
+          borderRadius: '1rem',
+          padding: '1.25rem 2rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
           zIndex: 1000
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
@@ -371,13 +371,13 @@ export default function CartPage() {
               <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
                 Total ({selectedItemIds.length} {(selectedItemIds.length === 1 ? 'item' : 'items')}):
               </div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1 }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1 }}>
                 ฿{totalAmount.toLocaleString()}
               </div>
             </div>
             <button
               className="btn-primary"
-              style={{ padding: '1rem 3rem', fontSize: '1.2rem', fontWeight: 800, borderRadius: '10px', boxShadow: '0 4px 15px rgba(129, 140, 248, 0.3)' }}
+              style={{ padding: '0.75rem 2rem', fontSize: '1rem', fontWeight: 700, borderRadius: '8px', boxShadow: '0 4px 15px rgba(129, 140, 248, 0.3)' }}
               onClick={() => {
                 if (selectedItemIds.length === 0) {
                   alert('Please select at least one item to checkout.')

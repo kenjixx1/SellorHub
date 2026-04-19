@@ -5,6 +5,7 @@ import { sellerService } from '../lib/services/sellerService'
 import { productService } from '../lib/services/productService'
 import type { ProductStatus } from '../lib/types'
 import { ProductGroup } from '../lib/models/ProductGroup'
+import { CustomDropdown } from '../components/CustomDropdown'
 
 
 
@@ -352,17 +353,16 @@ export default function CreateProductPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <select 
-                  className="form-input"
+                <CustomDropdown
                   style={{ flex: 1 }}
                   value={groupId}
-                  onChange={(e) => setGroupId(e.target.value)}
-                >
-                  <option value="">-- Uncategorized --</option>
-                  {groups.map(g => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setGroupId(String(val))}
+                  options={[
+                    { value: '', label: '-- Uncategorized --' },
+                    ...groups.map(g => ({ value: String(g.id), label: g.name }))
+                  ]}
+                  placeholder="Select Category"
+                />
                 <button 
                   type="button" 
                   className="btn-secondary" 
@@ -380,15 +380,16 @@ export default function CreateProductPage() {
 
           <div className="form-group">
             <label className="form-label">Status</label>
-            <select 
-              className="form-input"
+            <CustomDropdown
               value={status}
-              onChange={(e) => setStatus(e.target.value as ProductStatus)}
-            >
-              <option value="active">Active (Visible)</option>
-              <option value="hidden">Hidden</option>
-              <option value="sold">Sold Out</option>
-            </select>
+              onChange={(val) => setStatus(val as ProductStatus)}
+              options={[
+                { value: 'active', label: 'Active (Visible)' },
+                { value: 'hidden', label: 'Hidden' },
+                { value: 'sold', label: 'Sold Out' }
+              ]}
+              placeholder="Select Status"
+            />
           </div>
         </div>
 

@@ -25,7 +25,7 @@ class Product(Base):
     group = relationship('ProductGroup', back_populates='products')
     images = relationship('ProductImage', back_populates='product', cascade='all, delete-orphan', order_by='ProductImage.position')
     inquiries = relationship('Inquiry', back_populates='product', cascade='all, delete-orphan')
-    order_items = relationship('OrderItem', back_populates='product')
+    order_items = relationship('OrderItem', back_populates='product', passive_deletes=True)
 
     def __repr__(self):
         return f'<Product(id={self.id}, title={self.title}, price={self.price}, status={self.status})>'

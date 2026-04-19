@@ -542,9 +542,9 @@ export default function SellerDashboardPage() {
           }}
         >
           <SectionHeading title="Product groups" />
-          <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem' }}>
+          <Link to="/categories" className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem', textDecoration: 'none' }}>
             Manage groups
-          </button>
+          </Link>
         </div>
         {groupsError ? (
           <SectionError msg={groupsError} />

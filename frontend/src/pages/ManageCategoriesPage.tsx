@@ -233,9 +233,6 @@ export default function ManageCategoriesPage() {
         )}
       </div>
 
-      <p style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-        Tip: Categories help buyers browse your store. You can assign products to these categories in the Product Edit page.
-      </p>
     </div>
   )
 }
