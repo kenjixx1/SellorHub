@@ -1,16 +1,16 @@
 # Sellor — Sequence Diagram Specifications
 
 **Project:** Sellor Multi-Store E-Commerce Platform  
-**Version:** 4.0  
-**Date:** April 17, 2026  
+**Version:** 4.1  
+**Date:** April 20, 2026  
 **Notation:** Boundary-Control-Entity (BCE) with Combined Fragments (alt)
 
 **Conventions:**
 
 - `/name : Class` — accessing an **existing** entity instance (e.g., `/current : User`, `/selected : Store`)
 - `/new : Class` — creating a **new** entity instance (e.g., `/new : Store`)
-- Entity retrieval: service sends a direct `load(id)` message to the entity participant; entity returns its data
-- Entity persistence: service sends `save()` or `delete()` directly to the entity participant
+- Entity retrieval: system sends a direct `load(id)` message to the entity participant; entity returns its data
+- Entity persistence: system sends `save()` or `delete()` directly to the entity participant
 - Control objects self-loop for **business logic validation and existence/uniqueness checks**
 - `alt` — used for both **alternative cases** (two valid condition-based flows) and **exceptional cases** (one normal path, one path where the system cannot proceed)
 
@@ -34,17 +34,17 @@
 | InquiryDetailUI | SD-13 |
 | AdminSellerUI | SD-14 |
 | OrderDetailUI | SD-15 |
+| NotificationGateway | SD-12, SD-14 |
 
 ### Control Objects
 
 | Object | Used In |
 |--------|---------|
-| StoreService | SD-04, SD-10 |
-| ProductService | SD-07, SD-09, SD-10, SD-12 |
-| InquiryService | SD-12, SD-13 |
-| EmailService | SD-12, SD-14 |
-| AdminService | SD-14 |
-| OrderService | SD-11, SD-15 |
+| StoreSystem | SD-04, SD-10 |
+| ProductSystem | SD-07, SD-09, SD-10, SD-12 |
+| InquirySystem | SD-12, SD-13 |
+| AdminSystem | SD-14 |
+| OrderSystem | SD-11, SD-15 |
 
 ### Entity Objects
 
@@ -70,14 +70,16 @@
 
 **Use Case:** Create Store
 
-**Why Unique to Sellor:** Store creation is gated behind admin approval check + one-store-per-seller constraint + slug uniqueness.
+**Why Unique to Sellor:** Store creation is gated behind admin approval check + one-store-per-seller constraint + auto-generated unique public slug.
 
 **Participating Objects:**
 
 - `<<boundary>>` CreateStoreUI
-- `<<control>>` StoreService
+- `<<control>>` StoreSystem
 - `<<entity>>` /current : User
 - `<<entity>>` /new : Store
+
+**Note:** This SD describes the target documentation flow for auto-generated slugs. The current backend API may still require a client-provided slug until the implementation is updated.
 
 **Preconditions:**
 
@@ -91,20 +93,20 @@
 
 ### Main Success Scenario
 
-1. Seller -> CreateStoreUI : fillForm(name, slug, description, logo_url)
-2. CreateStoreUI -> StoreService : createStore(storeData)
-3. StoreService -> /current : User : load(userId)
-4. /current : User -> StoreService : return userData
-5. StoreService -> /current : User : getApprovalStatus()
-6. /current : User -> StoreService : return approved = true
-7. StoreService -> StoreService : validateSlugFormat(slug)
-8. StoreService -> StoreService : checkSlugAvailable(slug), return true
-9. StoreService -> StoreService : checkSellerHasNoStore(userId), return true
-10. StoreService -> /new : Store : new Store(name, slug, description, logo_url, userId)
-11. /new : Store -> StoreService : return storeData
-12. StoreService -> /new : Store : save()
-13. /new : Store -> StoreService : return saved
-14. StoreService -> CreateStoreUI : return 201 + storeData
+1. Seller -> CreateStoreUI : fillForm(name, description, logo_url)
+2. CreateStoreUI -> StoreSystem : createStore(storeData)
+3. StoreSystem -> /current : User : load(userId)
+4. /current : User -> StoreSystem : return userData
+5. StoreSystem -> /current : User : getApprovalStatus()
+6. /current : User -> StoreSystem : return approved = true
+7. StoreSystem -> StoreSystem : generateSlugCandidate(name)
+8. StoreSystem -> StoreSystem : ensureUniqueSlug(candidate), return uniqueSlug
+9. StoreSystem -> StoreSystem : checkSellerHasNoStore(userId), return true
+10. StoreSystem -> /new : Store : new Store(name, uniqueSlug, description, logo_url, userId)
+11. /new : Store -> StoreSystem : return storeData
+12. StoreSystem -> /new : Store : save()
+13. /new : Store -> StoreSystem : return saved
+14. StoreSystem -> CreateStoreUI : return 201 + storeData
 15. CreateStoreUI -> Seller : display "Store created" + redirect to dashboard
 
 ### alt — Description provided or not (after step 1, sequence continues either way)
@@ -129,10 +131,25 @@
 
 **[approved = false]:**
 
-1. /current : User -> StoreService : return approved = false
-2. StoreService -> CreateStoreUI : return 403 "Seller not approved"
+1. /current : User -> StoreSystem : return approved = false
+2. StoreSystem -> CreateStoreUI : return 403 "Seller not approved"
 3. CreateStoreUI -> Seller : display "Your account is pending approval"
 4. **Steps 7–15 never execute.**
+
+### alt — Generated slug is free or requires retry (after step 7, sequence continues either way)
+
+**[first candidate is available]:**
+
+1. Step 8 returns the generated slug immediately
+2. Steps 9–15 proceed normally
+
+**[candidate already taken]:**
+
+1. StoreSystem -> StoreSystem : appendSuffix(candidate), retry uniqueness check
+2. StoreSystem -> StoreSystem : ensureUniqueSlug(candidate-2), return uniqueSlug
+3. Steps 9–15 proceed normally
+
+> Both paths achieve the goal. The store is still created with a unique public slug.
 
 ---
 
@@ -145,7 +162,7 @@
 **Participating Objects:**
 
 - `<<boundary>>` CreateProductUI
-- `<<control>>` ProductService
+- `<<control>>` ProductSystem
 - `<<entity>>` /current : Store
 - `<<entity>>` /selected : ProductGroup
 - `<<entity>>` /new : Product
@@ -163,26 +180,26 @@
 ### Main Success Scenario
 
 1. Seller -> CreateProductUI : openCreateProductPage()
-2. CreateProductUI -> ProductService : getMyCategories(token)
-3. ProductService -> /current : Store : load(userId)
-4. /current : Store -> ProductService : return storeData
-5. ProductService -> /current : Store : getProductGroups()
-6. /current : Store -> ProductService : return categoryList
-7. ProductService -> CreateProductUI : return categoryList
+2. CreateProductUI -> ProductSystem : getMyCategories(token)
+3. ProductSystem -> /current : Store : load(userId)
+4. /current : Store -> ProductSystem : return storeData
+5. ProductSystem -> /current : Store : getProductGroups()
+6. /current : Store -> ProductSystem : return categoryList
+7. ProductSystem -> CreateProductUI : return categoryList
 8. CreateProductUI -> Seller : display form with category dropdown
 9. Seller -> CreateProductUI : fillForm(title, price, description, stock, status, group_id)
-10. CreateProductUI -> ProductService : createProduct(productData)
-11. ProductService -> ProductService : validateProductData(title, price)
-12. ProductService -> /selected : ProductGroup : load(group_id)
-13. /selected : ProductGroup -> ProductService : return groupData
-14. ProductService -> /selected : ProductGroup : getStoreId()
-15. /selected : ProductGroup -> ProductService : return storeId
-16. ProductService -> ProductService : verifyGroupBelongsToStore(group.storeId, seller.storeId)
-17. ProductService -> /new : Product : new Product(title, price, description, stock, status, group_id, storeId)
-18. /new : Product -> ProductService : return productData
-19. ProductService -> /new : Product : save()
-20. /new : Product -> ProductService : return saved
-21. ProductService -> CreateProductUI : return 201 + productData
+10. CreateProductUI -> ProductSystem : createProduct(productData)
+11. ProductSystem -> ProductSystem : validateProductData(title, price)
+12. ProductSystem -> /selected : ProductGroup : load(group_id)
+13. /selected : ProductGroup -> ProductSystem : return groupData
+14. ProductSystem -> /selected : ProductGroup : getStoreId()
+15. /selected : ProductGroup -> ProductSystem : return storeId
+16. ProductSystem -> ProductSystem : verifyGroupBelongsToStore(group.storeId, seller.storeId)
+17. ProductSystem -> /new : Product : new Product(title, price, description, stock, status, group_id, storeId)
+18. /new : Product -> ProductSystem : return productData
+19. ProductSystem -> /new : Product : save()
+20. /new : Product -> ProductSystem : return saved
+21. ProductSystem -> CreateProductUI : return 201 + productData
 22. CreateProductUI -> Seller : display "Product created"
 
 ### alt — Category selected or not (after step 9, sequence continues either way)
@@ -193,14 +210,14 @@
 
 **[group_id is null]:**
 
-1. CreateProductUI -> ProductService : createProduct(productData with group_id=null)
-2. ProductService -> ProductService : validateProductData(title, price)
-3. ProductService skips steps 12–16 (no category to validate)
-4. ProductService -> /new : Product : new Product(title, price, description, stock, status, null, storeId)
-5. /new : Product -> ProductService : return productData
-6. ProductService -> /new : Product : save()
-7. /new : Product -> ProductService : return saved
-8. ProductService -> CreateProductUI : return 201 + productData
+1. CreateProductUI -> ProductSystem : createProduct(productData with group_id=null)
+2. ProductSystem -> ProductSystem : validateProductData(title, price)
+3. ProductSystem skips steps 12–16 (no category to validate)
+4. ProductSystem -> /new : Product : new Product(title, price, description, stock, status, null, storeId)
+5. /new : Product -> ProductSystem : return productData
+6. ProductSystem -> /new : Product : save()
+7. /new : Product -> ProductSystem : return saved
+8. ProductSystem -> CreateProductUI : return 201 + productData
 9. CreateProductUI -> Seller : display "Product created (uncategorized)"
 
 > Both paths achieve the goal. Product is created either way.
@@ -213,8 +230,8 @@
 
 **[group.storeId ≠ seller.storeId]:**
 
-1. ProductService -> ProductService : verifyGroupBelongsToStore fails
-2. ProductService -> CreateProductUI : return 400 "Invalid category"
+1. ProductSystem -> ProductSystem : verifyGroupBelongsToStore fails
+2. ProductSystem -> CreateProductUI : return 400 "Invalid category"
 3. CreateProductUI -> Seller : display error message
 4. **Steps 17–22 never execute.**
 
@@ -229,7 +246,7 @@
 **Participating Objects:**
 
 - `<<boundary>>` EditProductUI
-- `<<control>>` ProductService
+- `<<control>>` ProductSystem
 - `<<entity>>` /current : Store
 - `<<entity>>` /selected : Product
 - `<<entity>>` /selected : ProductGroup
@@ -247,27 +264,27 @@
 ### Main Success Scenario
 
 1. Seller -> EditProductUI : openEditProductPage(productId)
-2. EditProductUI -> ProductService : getProduct(productId)
-3. ProductService -> /selected : Product : load(productId)
-4. /selected : Product -> ProductService : return productData
-5. ProductService -> /selected : Product : getStoreId()
-6. /selected : Product -> ProductService : return storeId
-7. ProductService -> ProductService : verifyOwnership(product.storeId, seller.storeId)
-8. ProductService -> EditProductUI : return productData
+2. EditProductUI -> ProductSystem : getProduct(productId)
+3. ProductSystem -> /selected : Product : load(productId)
+4. /selected : Product -> ProductSystem : return productData
+5. ProductSystem -> /selected : Product : getStoreId()
+6. /selected : Product -> ProductSystem : return storeId
+7. ProductSystem -> ProductSystem : verifyOwnership(product.storeId, seller.storeId)
+8. ProductSystem -> EditProductUI : return productData
 9. EditProductUI -> Seller : display edit form pre-filled with current values
 10. Seller -> EditProductUI : fillForm(title, price, description, stock, status, group_id)
-11. EditProductUI -> ProductService : updateProduct(productId, updatedData)
-12. ProductService -> ProductService : validateProductData(title, price)
-13. ProductService -> /selected : ProductGroup : load(group_id)
-14. /selected : ProductGroup -> ProductService : return groupData
-15. ProductService -> /selected : ProductGroup : getStoreId()
-16. /selected : ProductGroup -> ProductService : return storeId
-17. ProductService -> ProductService : verifyGroupBelongsToStore(group.storeId, seller.storeId)
-18. ProductService -> /selected : Product : setFields(title, price, description, stock, status, group_id)
-19. /selected : Product -> ProductService : return updated
-20. ProductService -> /selected : Product : save()
-21. /selected : Product -> ProductService : return saved
-22. ProductService -> EditProductUI : return 200 + updatedProductData
+11. EditProductUI -> ProductSystem : updateProduct(productId, updatedData)
+12. ProductSystem -> ProductSystem : validateProductData(title, price)
+13. ProductSystem -> /selected : ProductGroup : load(group_id)
+14. /selected : ProductGroup -> ProductSystem : return groupData
+15. ProductSystem -> /selected : ProductGroup : getStoreId()
+16. /selected : ProductGroup -> ProductSystem : return storeId
+17. ProductSystem -> ProductSystem : verifyGroupBelongsToStore(group.storeId, seller.storeId)
+18. ProductSystem -> /selected : Product : setFields(title, price, description, stock, status, group_id)
+19. /selected : Product -> ProductSystem : return updated
+20. ProductSystem -> /selected : Product : save()
+21. /selected : Product -> ProductSystem : return saved
+22. ProductSystem -> EditProductUI : return 200 + updatedProductData
 23. EditProductUI -> Seller : display "Product updated"
 
 ### alt — Category changed or unchanged (after step 10, sequence continues either way)
@@ -278,14 +295,14 @@
 
 **[group_id unchanged or null]:**
 
-1. EditProductUI -> ProductService : updateProduct(productId, updatedData with no group_id change)
-2. ProductService -> ProductService : validateProductData(title, price)
-3. ProductService skips steps 13–17 (no category to validate)
-4. ProductService -> /selected : Product : setFields(title, price, description, stock, status)
-5. /selected : Product -> ProductService : return updated
-6. ProductService -> /selected : Product : save()
-7. /selected : Product -> ProductService : return saved
-8. ProductService -> EditProductUI : return 200 + updatedProductData
+1. EditProductUI -> ProductSystem : updateProduct(productId, updatedData with no group_id change)
+2. ProductSystem -> ProductSystem : validateProductData(title, price)
+3. ProductSystem skips steps 13–17 (no category to validate)
+4. ProductSystem -> /selected : Product : setFields(title, price, description, stock, status)
+5. /selected : Product -> ProductSystem : return updated
+6. ProductSystem -> /selected : Product : save()
+7. /selected : Product -> ProductSystem : return saved
+8. ProductSystem -> EditProductUI : return 200 + updatedProductData
 9. EditProductUI -> Seller : display "Product updated"
 
 > Both paths achieve the goal. Product is updated either way.
@@ -298,8 +315,8 @@
 
 **[product.storeId ≠ seller.storeId]:**
 
-1. ProductService -> ProductService : verifyOwnership fails
-2. ProductService -> EditProductUI : return 403 "Forbidden"
+1. ProductSystem -> ProductSystem : verifyOwnership fails
+2. ProductSystem -> EditProductUI : return 403 "Forbidden"
 3. EditProductUI -> Seller : display "Access denied"
 4. **Steps 8–23 never execute.**
 
@@ -315,8 +332,8 @@
 
 - `<<boundary>>` HomepageUI
 - `<<boundary>>` StorePageUI
-- `<<control>>` StoreService
-- `<<control>>` ProductService
+- `<<control>>` StoreSystem
+- `<<control>>` ProductSystem
 - `<<entity>>` /selected : Store
 
 **Preconditions:**
@@ -331,24 +348,24 @@
 ### Main Success Scenario
 
 1. Visitor -> HomepageUI : openHomepage()
-2. HomepageUI -> StoreService : listStores(page, limit)
-3. StoreService -> StoreService : loadStoresPaginated(page, limit), return storeList
-4. StoreService -> HomepageUI : return storeList
+2. HomepageUI -> StoreSystem : listStores(page, limit)
+3. StoreSystem -> StoreSystem : loadStoresPaginated(page, limit), return storeList
+4. StoreSystem -> HomepageUI : return storeList
 5. HomepageUI -> Visitor : display store card grid
 6. Visitor -> HomepageUI : clickStoreCard(slug)
 7. HomepageUI -> StorePageUI : navigate(/store/{slug})
-8. StorePageUI -> StoreService : getStoreBySlug(slug)
-9. StoreService -> /selected : Store : load(slug)
-10. /selected : Store -> StoreService : return storeData
-11. StoreService -> StorePageUI : return storeDetail
-12. StorePageUI -> ProductService : getStoreProducts(storeId, page, limit)
-13. ProductService -> /selected : Store : getActiveProducts(page, limit)
-14. /selected : Store -> ProductService : return productList
-15. ProductService -> StorePageUI : return productList
-16. StorePageUI -> StoreService : getStoreGroups(storeId)
-17. StoreService -> /selected : Store : getProductGroups()
-18. /selected : Store -> StoreService : return groupList with counts
-19. StoreService -> StorePageUI : return groupList
+8. StorePageUI -> StoreSystem : getStoreBySlug(slug)
+9. StoreSystem -> /selected : Store : load(slug)
+10. /selected : Store -> StoreSystem : return storeData
+11. StoreSystem -> StorePageUI : return storeDetail
+12. StorePageUI -> ProductSystem : getStoreProducts(storeId, page, limit)
+13. ProductSystem -> /selected : Store : getActiveProducts(page, limit)
+14. /selected : Store -> ProductSystem : return productList
+15. ProductSystem -> StorePageUI : return productList
+16. StorePageUI -> StoreSystem : getStoreGroups(storeId)
+17. StoreSystem -> /selected : Store : getProductGroups()
+18. /selected : Store -> StoreSystem : return groupList with counts
+19. StoreSystem -> StorePageUI : return groupList
 20. StorePageUI -> Visitor : display store header + product grid + category sidebar
 
 ### alt — Filter by category or view all (after step 20, sequence continues either way)
@@ -356,10 +373,10 @@
 **[visitor clicks a category in sidebar]:**
 
 1. Visitor -> StorePageUI : filterByCategory(group_id)
-2. StorePageUI -> ProductService : getStoreProducts(storeId, group_id, page)
-3. ProductService -> /selected : Store : getActiveProducts(group_id, page)
-4. /selected : Store -> ProductService : return filteredProductList
-5. ProductService -> StorePageUI : return filteredProductList
+2. StorePageUI -> ProductSystem : getStoreProducts(storeId, group_id, page)
+3. ProductSystem -> /selected : Store : getActiveProducts(group_id, page)
+4. /selected : Store -> ProductSystem : return filteredProductList
+5. ProductSystem -> StorePageUI : return filteredProductList
 6. StorePageUI -> Visitor : display filtered product grid
 
 **[visitor does not filter]:**
@@ -376,8 +393,8 @@
 
 **[slug does not exist]:**
 
-1. /selected : Store -> StoreService : return null
-2. StoreService -> StorePageUI : return 404 "Store not found"
+1. /selected : Store -> StoreSystem : return null
+2. StoreSystem -> StorePageUI : return 404 "Store not found"
 3. StorePageUI -> Visitor : display "Store not found" page
 4. **Steps 11–20 never execute.**
 
@@ -392,7 +409,7 @@
 **Participating Objects:**
 
 - `<<boundary>>` CheckoutUI
-- `<<control>>` OrderService
+- `<<control>>` OrderSystem
 - `<<entity>>` /selected : Address
 - `<<entity>>` /new : Order
 
@@ -412,24 +429,24 @@
 ### Main Success Scenario
 
 1. Buyer -> CheckoutUI : openCheckoutPage()
-2. CheckoutUI -> OrderService : getCartSummary(token)
-3. OrderService -> OrderService : loadCartItems(buyerId), return cartSummary
-4. OrderService -> CheckoutUI : return cartSummary + storeInfo
+2. CheckoutUI -> OrderSystem : getCartSummary(token)
+3. OrderSystem -> OrderSystem : loadCartItems(buyerId), return cartSummary
+4. OrderSystem -> CheckoutUI : return cartSummary + storeInfo
 5. CheckoutUI -> Buyer : display order summary + address selection
 6. Buyer -> CheckoutUI : selectAddress(addressId)
-7. CheckoutUI -> OrderService : placeOrder(token, storeId, addressId)
-8. OrderService -> OrderService : validateCart(buyerId, storeId) — non-empty, single store
-9. OrderService -> OrderService : checkStockAvailability(cartItems), return sufficient
-10. OrderService -> /selected : Address : load(addressId)
-11. /selected : Address -> OrderService : return addressData
-12. OrderService -> OrderService : verifyAddressBelongsToBuyer(address.userId, buyerId)
-13. OrderService -> /new : Order : new Order(buyerId, storeId, addressId, items with price snapshot, status="placed")
-14. /new : Order -> OrderService : return orderData
-15. OrderService -> OrderService : decrementStock(cartItems)
-16. OrderService -> /new : Order : save()
-17. /new : Order -> OrderService : return saved
-18. OrderService -> OrderService : clearCart(buyerId)
-19. OrderService -> CheckoutUI : return 201 + orderData
+7. CheckoutUI -> OrderSystem : placeOrder(token, storeId, addressId)
+8. OrderSystem -> OrderSystem : validateCart(buyerId, storeId) — non-empty, single store
+9. OrderSystem -> OrderSystem : checkStockAvailability(cartItems), return sufficient
+10. OrderSystem -> /selected : Address : load(addressId)
+11. /selected : Address -> OrderSystem : return addressData
+12. OrderSystem -> OrderSystem : verifyAddressBelongsToBuyer(address.userId, buyerId)
+13. OrderSystem -> /new : Order : new Order(buyerId, storeId, addressId, items with price snapshot, status="placed")
+14. /new : Order -> OrderSystem : return orderData
+15. OrderSystem -> OrderSystem : decrementStock(cartItems)
+16. OrderSystem -> /new : Order : save()
+17. /new : Order -> OrderSystem : return saved
+18. OrderSystem -> OrderSystem : clearCart(buyerId)
+19. OrderSystem -> CheckoutUI : return 201 + orderData
 20. CheckoutUI -> Buyer : display "Order placed" + order confirmation
 
 ### alt — Checkout from cart vs. direct item checkout (after step 1, sequence continues either way)
@@ -440,7 +457,7 @@
 
 **[direct item checkout (single product, no cart)]:**
 
-1. CheckoutUI -> OrderService : placeOrderDirect(token, storeId, addressId, items)
+1. CheckoutUI -> OrderSystem : placeOrderDirect(token, storeId, addressId, items)
 2. Steps 8–20 proceed normally with provided items instead of cart items
 3. CheckoutUI -> Buyer : display "Order placed" + order confirmation
 
@@ -454,8 +471,8 @@
 
 **[stock insufficient or cart empty]:**
 
-1. OrderService -> OrderService : validation fails
-2. OrderService -> CheckoutUI : return 400 "Insufficient stock" or "Cart is empty"
+1. OrderSystem -> OrderSystem : validation fails
+2. OrderSystem -> CheckoutUI : return 400 "Insufficient stock" or "Cart is empty"
 3. CheckoutUI -> Buyer : display error message
 4. **Steps 10–20 never execute.**
 
@@ -471,9 +488,9 @@
 
 - `<<boundary>>` ProductDetailUI
 - `<<boundary>>` InquiryFormUI
-- `<<control>>` ProductService
-- `<<control>>` InquiryService
-- `<<control>>` EmailService
+- `<<control>>` ProductSystem
+- `<<control>>` InquirySystem
+- `<<boundary>>` NotificationGateway
 - `<<entity>>` /selected : Product
 - `<<entity>>` /selected : Store
 - `<<entity>>` /new : Inquiry
@@ -491,32 +508,32 @@
 ### Main Success Scenario
 
 1. Visitor -> ProductDetailUI : clickProduct(productId)
-2. ProductDetailUI -> ProductService : getProduct(productId)
-3. ProductService -> /selected : Product : load(productId)
-4. /selected : Product -> ProductService : return productData
-5. ProductService -> /selected : Product : getStatus()
-6. /selected : Product -> ProductService : return status = "active"
-7. ProductService -> ProductService : verifyProductIsVisible(status ≠ "hidden")
-8. ProductService -> /selected : Product : getImages()
-9. /selected : Product -> ProductService : return imageList
-10. ProductService -> ProductDetailUI : return productData + imageList + storeInfo
+2. ProductDetailUI -> ProductSystem : getProduct(productId)
+3. ProductSystem -> /selected : Product : load(productId)
+4. /selected : Product -> ProductSystem : return productData
+5. ProductSystem -> /selected : Product : getStatus()
+6. /selected : Product -> ProductSystem : return status = "active"
+7. ProductSystem -> ProductSystem : verifyProductIsVisible(status ≠ "hidden")
+8. ProductSystem -> /selected : Product : getImages()
+9. /selected : Product -> ProductSystem : return imageList
+10. ProductSystem -> ProductDetailUI : return productData + imageList + storeInfo
 11. ProductDetailUI -> Visitor : display product page with gallery
 12. Visitor -> InquiryFormUI : clickContactSeller()
 13. Visitor -> InquiryFormUI : fillForm(name, email, message)
-14. InquiryFormUI -> InquiryService : submitInquiry(productId, name, email, message)
-15. InquiryService -> InquiryService : validateInquiryData(name, email, message)
-16. InquiryService -> /selected : Product : getStoreId()
-17. /selected : Product -> InquiryService : return storeId
-18. InquiryService -> /selected : Store : load(storeId)
-19. /selected : Store -> InquiryService : return storeData
-20. InquiryService -> /new : Inquiry : new Inquiry(productId, storeId, name, email, message, status="new")
-21. /new : Inquiry -> InquiryService : return inquiryData
-22. InquiryService -> /new : Inquiry : save()
-23. /new : Inquiry -> InquiryService : return saved
-24. InquiryService -> EmailService : sendNotification(store.sellerEmail, productTitle, name, message)
-25. EmailService -> EmailService : composeAndSendEmail()
-26. EmailService -> InquiryService : return sent = true
-27. InquiryService -> InquiryFormUI : return 201
+14. InquiryFormUI -> InquirySystem : submitInquiry(productId, name, email, message)
+15. InquirySystem -> InquirySystem : validateInquiryData(name, email, message)
+16. InquirySystem -> /selected : Product : getStoreId()
+17. /selected : Product -> InquirySystem : return storeId
+18. InquirySystem -> /selected : Store : load(storeId)
+19. /selected : Store -> InquirySystem : return storeData
+20. InquirySystem -> /new : Inquiry : new Inquiry(productId, storeId, name, email, message, status="new")
+21. /new : Inquiry -> InquirySystem : return inquiryData
+22. InquirySystem -> /new : Inquiry : save()
+23. /new : Inquiry -> InquirySystem : return saved
+24. InquirySystem -> NotificationGateway : sendNotification(store.sellerEmail, productTitle, name, message)
+25. NotificationGateway -> NotificationGateway : composeAndSendEmail()
+26. NotificationGateway -> InquirySystem : return sent = true
+27. InquirySystem -> InquiryFormUI : return 201
 28. InquiryFormUI -> Visitor : display "Inquiry sent successfully"
 
 ### alt — Guest submission or logged-in buyer (after step 12, sequence continues either way)
@@ -540,26 +557,26 @@
 
 **[status = "hidden"]:**
 
-1. ProductService -> ProductService : verifyProductIsVisible fails
-2. ProductService -> ProductDetailUI : return 404 "Product not found"
+1. ProductSystem -> ProductSystem : verifyProductIsVisible fails
+2. ProductSystem -> ProductDetailUI : return 404 "Product not found"
 3. ProductDetailUI -> Visitor : display "Product not found" page
 4. **Steps 8–28 never execute.**
 
-### alt — Email service unavailable (exceptional case, at step 25)
+### alt — Notification gateway unavailable (exceptional case, at step 25)
 
 **[email sends successfully]:**
 
-1. EmailService -> EmailService : composeAndSendEmail()
-2. EmailService -> InquiryService : return sent = true
-3. InquiryService -> InquiryFormUI : return 201
+1. NotificationGateway -> NotificationGateway : composeAndSendEmail()
+2. NotificationGateway -> InquirySystem : return sent = true
+3. InquirySystem -> InquiryFormUI : return 201
 4. InquiryFormUI -> Visitor : display "Inquiry sent successfully"
 
 **[email service unavailable]:**
 
-1. EmailService -> EmailService : composeAndSendEmail() fails
-2. EmailService -> InquiryService : return sent = false
-3. InquiryService -> InquiryService : logEmailFailure() (inquiry already saved at step 23)
-4. InquiryService -> InquiryFormUI : return 201
+1. NotificationGateway -> NotificationGateway : composeAndSendEmail() fails
+2. NotificationGateway -> InquirySystem : return sent = false
+3. InquirySystem -> InquirySystem : logEmailFailure() (inquiry already saved at step 23)
+4. InquirySystem -> InquiryFormUI : return 201
 5. InquiryFormUI -> Visitor : display "Inquiry sent successfully"
 
 > Inquiry is saved regardless of email outcome.
@@ -576,7 +593,7 @@
 
 - `<<boundary>>` InquiryListUI
 - `<<boundary>>` InquiryDetailUI
-- `<<control>>` InquiryService
+- `<<control>>` InquirySystem
 - `<<entity>>` /current : Store
 - `<<entity>>` /selected : Inquiry
 
@@ -593,31 +610,31 @@
 ### Main Success Scenario
 
 1. Seller -> InquiryListUI : openInquiriesPage()
-2. InquiryListUI -> InquiryService : getInquiries(token, page, limit)
-3. InquiryService -> /current : Store : load(userId)
-4. /current : Store -> InquiryService : return storeData
-5. InquiryService -> /current : Store : getInquiries(page, limit)
-6. /current : Store -> InquiryService : return inquiryList
-7. InquiryService -> InquiryListUI : return inquiryList
+2. InquiryListUI -> InquirySystem : getInquiries(token, page, limit)
+3. InquirySystem -> /current : Store : load(userId)
+4. /current : Store -> InquirySystem : return storeData
+5. InquirySystem -> /current : Store : getInquiries(page, limit)
+6. /current : Store -> InquirySystem : return inquiryList
+7. InquirySystem -> InquiryListUI : return inquiryList
 8. InquiryListUI -> Seller : display inquiry table
 9. Seller -> InquiryListUI : clickInquiryRow(inquiryId)
 10. InquiryListUI -> InquiryDetailUI : navigate(inquiryId)
-11. InquiryDetailUI -> InquiryService : getInquiry(inquiryId)
-12. InquiryService -> /selected : Inquiry : load(inquiryId)
-13. /selected : Inquiry -> InquiryService : return inquiryData
-14. InquiryService -> /selected : Inquiry : getStoreId()
-15. /selected : Inquiry -> InquiryService : return storeId
-16. InquiryService -> InquiryService : verifyBelongsToStore(inquiry.storeId, seller.storeId)
-17. InquiryService -> InquiryDetailUI : return inquiryDetail
+11. InquiryDetailUI -> InquirySystem : getInquiry(inquiryId)
+12. InquirySystem -> /selected : Inquiry : load(inquiryId)
+13. /selected : Inquiry -> InquirySystem : return inquiryData
+14. InquirySystem -> /selected : Inquiry : getStoreId()
+15. /selected : Inquiry -> InquirySystem : return storeId
+16. InquirySystem -> InquirySystem : verifyBelongsToStore(inquiry.storeId, seller.storeId)
+17. InquirySystem -> InquiryDetailUI : return inquiryDetail
 18. InquiryDetailUI -> Seller : display full inquiry (message, buyer email, product link)
 19. Seller responds to buyer via external email
 20. Seller -> InquiryDetailUI : clickMarkAsReplied(inquiryId)
-21. InquiryDetailUI -> InquiryService : updateStatus(inquiryId, "replied")
-22. InquiryService -> /selected : Inquiry : setStatus("replied")
-23. /selected : Inquiry -> InquiryService : return updated
-24. InquiryService -> /selected : Inquiry : save()
-25. /selected : Inquiry -> InquiryService : return saved
-26. InquiryService -> InquiryDetailUI : return 200
+21. InquiryDetailUI -> InquirySystem : updateStatus(inquiryId, "replied")
+22. InquirySystem -> /selected : Inquiry : setStatus("replied")
+23. /selected : Inquiry -> InquirySystem : return updated
+24. InquirySystem -> /selected : Inquiry : save()
+25. /selected : Inquiry -> InquirySystem : return saved
+26. InquirySystem -> InquiryDetailUI : return 200
 27. InquiryDetailUI -> Seller : display updated status badge
 
 ### alt — View all or filter by status (after step 2, sequence continues either way)
@@ -628,12 +645,12 @@
 
 **[seller selects status filter = "new"]:**
 
-1. InquiryListUI -> InquiryService : getInquiries(token, status="new", page)
-2. InquiryService -> /current : Store : load(userId)
-3. /current : Store -> InquiryService : return storeData
-4. InquiryService -> /current : Store : getInquiries(status="new", page, limit)
-5. /current : Store -> InquiryService : return filteredInquiryList
-6. InquiryService -> InquiryListUI : return filteredInquiryList
+1. InquiryListUI -> InquirySystem : getInquiries(token, status="new", page)
+2. InquirySystem -> /current : Store : load(userId)
+3. /current : Store -> InquirySystem : return storeData
+4. InquirySystem -> /current : Store : getInquiries(status="new", page, limit)
+5. /current : Store -> InquirySystem : return filteredInquiryList
+6. InquirySystem -> InquiryListUI : return filteredInquiryList
 7. InquiryListUI -> Seller : display only new inquiries
 
 > Both paths achieve the goal. Seller views inquiries either way.
@@ -646,8 +663,8 @@
 
 **[inquiry.storeId ≠ seller.storeId]:**
 
-1. InquiryService -> InquiryService : verifyBelongsToStore fails
-2. InquiryService -> InquiryDetailUI : return 403 "Forbidden"
+1. InquirySystem -> InquirySystem : verifyBelongsToStore fails
+2. InquirySystem -> InquiryDetailUI : return 403 "Forbidden"
 3. InquiryDetailUI -> Seller : display "Access denied"
 4. **Steps 17–27 never execute.**
 
@@ -662,8 +679,8 @@
 **Participating Objects:**
 
 - `<<boundary>>` AdminSellerUI
-- `<<control>>` AdminService
-- `<<control>>` EmailService
+- `<<control>>` AdminSystem
+- `<<boundary>>` NotificationGateway
 - `<<entity>>` /selected : User
 
 **Preconditions:**
@@ -685,25 +702,25 @@
 ### Main Success Scenario
 
 1. Admin -> AdminSellerUI : openPendingSellers()
-2. AdminSellerUI -> AdminService : getPendingSellers(token)
-3. AdminService -> AdminService : loadPendingSellers(), return pendingSellerList
-4. AdminService -> AdminSellerUI : return pendingSellerList
+2. AdminSellerUI -> AdminSystem : getPendingSellers(token)
+3. AdminSystem -> AdminSystem : loadPendingSellers(), return pendingSellerList
+4. AdminSystem -> AdminSellerUI : return pendingSellerList
 5. AdminSellerUI -> Admin : display pending sellers table
 6. Admin -> AdminSellerUI : clickApprove(userId)
-7. AdminSellerUI -> AdminService : approveSeller(userId, approve=true)
-8. AdminService -> /selected : User : load(userId)
-9. /selected : User -> AdminService : return userData
-10. AdminService -> /selected : User : getRole()
-11. /selected : User -> AdminService : return role = "seller"
-12. AdminService -> AdminService : verifyRole(role = "seller")
-13. AdminService -> /selected : User : setSellingApprove(true)
-14. /selected : User -> AdminService : return updated
-15. AdminService -> /selected : User : save()
-16. /selected : User -> AdminService : return saved
-17. AdminService -> EmailService : sendApprovalEmail(user.email)
-18. EmailService -> EmailService : composeAndSendEmail()
-19. EmailService -> AdminService : return sent = true
-20. AdminService -> AdminSellerUI : return 200
+7. AdminSellerUI -> AdminSystem : approveSeller(userId, approve=true)
+8. AdminSystem -> /selected : User : load(userId)
+9. /selected : User -> AdminSystem : return userData
+10. AdminSystem -> /selected : User : getRole()
+11. /selected : User -> AdminSystem : return role = "seller"
+12. AdminSystem -> AdminSystem : verifyRole(role = "seller")
+13. AdminSystem -> /selected : User : setSellingApprove(true)
+14. /selected : User -> AdminSystem : return updated
+15. AdminSystem -> /selected : User : save()
+16. /selected : User -> AdminSystem : return saved
+17. AdminSystem -> NotificationGateway : sendApprovalEmail(user.email)
+18. NotificationGateway -> NotificationGateway : composeAndSendEmail()
+19. NotificationGateway -> AdminSystem : return sent = true
+20. AdminSystem -> AdminSellerUI : return 200
 21. AdminSellerUI -> Admin : remove seller from pending list + display success
 
 ### alt — Approve or Reject (after step 5, sequence continues either way)
@@ -717,20 +734,20 @@
 **[Admin clicks "Reject"]:**
 
 1. Admin -> AdminSellerUI : clickReject(userId)
-2. AdminSellerUI -> AdminService : approveSeller(userId, approve=false)
-3. AdminService -> /selected : User : load(userId)
-4. /selected : User -> AdminService : return userData
-5. AdminService -> /selected : User : getRole()
-6. /selected : User -> AdminService : return role = "seller"
-7. AdminService -> AdminService : verifyRole(role = "seller")
-8. AdminService -> /selected : User : setSellingApprove(false)
-9. /selected : User -> AdminService : return updated
-10. AdminService -> /selected : User : save()
-11. /selected : User -> AdminService : return saved
-12. AdminService -> EmailService : sendRejectionEmail(user.email)
-13. EmailService -> EmailService : composeAndSendEmail()
-14. EmailService -> AdminService : return sent = true
-15. AdminService -> AdminSellerUI : return 200
+2. AdminSellerUI -> AdminSystem : approveSeller(userId, approve=false)
+3. AdminSystem -> /selected : User : load(userId)
+4. /selected : User -> AdminSystem : return userData
+5. AdminSystem -> /selected : User : getRole()
+6. /selected : User -> AdminSystem : return role = "seller"
+7. AdminSystem -> AdminSystem : verifyRole(role = "seller")
+8. AdminSystem -> /selected : User : setSellingApprove(false)
+9. /selected : User -> AdminSystem : return updated
+10. AdminSystem -> /selected : User : save()
+11. /selected : User -> AdminSystem : return saved
+12. AdminSystem -> NotificationGateway : sendRejectionEmail(user.email)
+13. NotificationGateway -> NotificationGateway : composeAndSendEmail()
+14. NotificationGateway -> AdminSystem : return sent = true
+15. AdminSystem -> AdminSellerUI : return 200
 16. AdminSellerUI -> Admin : remove seller from pending list + display "Rejected"
 
 > Both paths achieve the admin's goal — making a decision on the application.
@@ -743,8 +760,8 @@
 
 **[role ≠ "seller"]:**
 
-1. AdminService -> AdminService : verifyRole fails
-2. AdminService -> AdminSellerUI : return 400 "User is not a seller"
+1. AdminSystem -> AdminSystem : verifyRole fails
+2. AdminSystem -> AdminSellerUI : return 400 "User is not a seller"
 3. AdminSellerUI -> Admin : display error message
 4. **Steps 13–21 never execute.**
 
@@ -759,7 +776,7 @@
 **Participating Objects:**
 
 - `<<boundary>>` OrderDetailUI
-- `<<control>>` OrderService
+- `<<control>>` OrderSystem
 - `<<entity>>` /selected : Order
 
 **Preconditions:**
@@ -774,17 +791,17 @@
 ### Main Success Scenario
 
 1. Buyer -> OrderDetailUI : openOrderPage(orderId)
-2. OrderDetailUI -> OrderService : getOrder(orderId, token)
-3. OrderService -> /selected : Order : load(orderId)
-4. /selected : Order -> OrderService : return orderData
-5. OrderService -> /selected : Order : getBuyerId()
-6. /selected : Order -> OrderService : return buyerId
-7. OrderService -> OrderService : verifyBuyerAccess(order.buyerId, currentUserId)
-8. OrderService -> /selected : Order : getItems()
-9. /selected : Order -> OrderService : return itemList with price snapshots
-10. OrderService -> /selected : Order : getStatusHistory()
-11. /selected : Order -> OrderService : return statusHistory
-12. OrderService -> OrderDetailUI : return orderData + itemList + statusHistory
+2. OrderDetailUI -> OrderSystem : getOrder(orderId, token)
+3. OrderSystem -> /selected : Order : load(orderId)
+4. /selected : Order -> OrderSystem : return orderData
+5. OrderSystem -> /selected : Order : getBuyerId()
+6. /selected : Order -> OrderSystem : return buyerId
+7. OrderSystem -> OrderSystem : verifyBuyerAccess(order.buyerId, currentUserId)
+8. OrderSystem -> /selected : Order : getItems()
+9. /selected : Order -> OrderSystem : return itemList with price snapshots
+10. OrderSystem -> /selected : Order : getStatusHistory()
+11. /selected : Order -> OrderSystem : return statusHistory
+12. OrderSystem -> OrderDetailUI : return orderData + itemList + statusHistory
 13. OrderDetailUI -> Buyer : display full order details with status timeline
 
 ### alt — Buyer viewing their order vs. seller viewing store order (after step 2, sequence continues either way)
@@ -796,16 +813,16 @@
 
 **[seller viewing store order]:**
 
-1. OrderService -> /selected : Order : load(orderId)
-2. /selected : Order -> OrderService : return orderData
-3. OrderService -> /selected : Order : getStoreId()
-4. /selected : Order -> OrderService : return storeId
-5. OrderService -> OrderService : verifySellerAccess(order.storeId, seller.storeId)
-6. OrderService -> /selected : Order : getItems()
-7. /selected : Order -> OrderService : return itemList
-8. OrderService -> /selected : Order : getStatusHistory()
-9. /selected : Order -> OrderService : return statusHistory
-10. OrderService -> OrderDetailUI : return orderData + itemList + statusHistory
+1. OrderSystem -> /selected : Order : load(orderId)
+2. /selected : Order -> OrderSystem : return orderData
+3. OrderSystem -> /selected : Order : getStoreId()
+4. /selected : Order -> OrderSystem : return storeId
+5. OrderSystem -> OrderSystem : verifySellerAccess(order.storeId, seller.storeId)
+6. OrderSystem -> /selected : Order : getItems()
+7. /selected : Order -> OrderSystem : return itemList
+8. OrderSystem -> /selected : Order : getStatusHistory()
+9. /selected : Order -> OrderSystem : return statusHistory
+10. OrderSystem -> OrderDetailUI : return orderData + itemList + statusHistory
 11. OrderDetailUI -> Seller : display full order details with "Update Status" seller controls
 
 > Both paths achieve the goal. Order details are visible to the appropriate user.
@@ -818,8 +835,8 @@
 
 **[order does not exist]:**
 
-1. /selected : Order -> OrderService : return null
-2. OrderService -> OrderDetailUI : return 404 "Order not found"
+1. /selected : Order -> OrderSystem : return null
+2. OrderSystem -> OrderDetailUI : return 404 "Order not found"
 3. OrderDetailUI -> User : display "Order not found" page
 4. **Steps 4–13 never execute.**
 
@@ -831,8 +848,8 @@
 
 **[user does not own order or store]:**
 
-1. OrderService -> OrderService : verifyAccess fails
-2. OrderService -> OrderDetailUI : return 403 "Forbidden"
+1. OrderSystem -> OrderSystem : verifyAccess fails
+2. OrderSystem -> OrderDetailUI : return 403 "Forbidden"
 3. OrderDetailUI -> User : display "Access denied" page
 4. **Steps 8–13 never execute.**
 

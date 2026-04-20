@@ -130,12 +130,27 @@ Authorization: Bearer <access_token>
 | Method | Endpoint | Auth | Status | Description |
 |--------|----------|------|--------|-------------|
 | `GET` | `/api/stores` | 🔓 | `200` | Browse all stores with optional search and pagination |
+| `GET` | `/api/stores/check-slug` | 🔓 | `200` | Check whether a slug is valid and not yet taken |
 | `GET` | `/api/stores/{slug}` | 🔓 | `200` | View a store's public profile by its slug |
 | `GET` | `/api/stores/{slug}/products` | 🔓 | `200` | Browse active products in a specific store |
 | `GET` | `/api/stores/{slug}/groups` | 🔓 | `200` | Get product categories for a store with counts |
 | `POST` | `/api/stores` | 🏪 | `201` | Create your seller store |
 | `PUT` | `/api/stores/me` | 🏪 | `200` | Update your store's info (slug cannot change) |
 | `GET` | `/api/stores/me/dashboard` | 🏪 | `200` | Get dashboard stats: products + inquiry counts |
+
+### GET `/api/stores/check-slug` — Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `slug` | `string` | Yes | Slug value to check (1–50 chars) |
+
+**Response:**
+```json
+{ "slug": "nisa-jewelry", "valid": true, "available": true }
+```
+
+- `valid` — `false` if the slug fails format rules (not `^[a-z0-9-]+$`, or starts/ends with `-`, or length < 3).
+- `available` — `false` if a store with that slug already exists. Always `false` when `valid` is `false`.
 
 ### GET `/api/stores` — Query Parameters
 

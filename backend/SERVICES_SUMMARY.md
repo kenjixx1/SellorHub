@@ -16,6 +16,12 @@ Model/Entity (domain rules: availability, transitions, invariants)
 Database
 ```
 
+### Diagram alignment note
+
+- The sequence and class diagrams under [`diagram/`](../diagram/) should use the same `*System` control objects as the active backend code in `app/systems/`.
+- The legacy `app/services/` folder is retained only for reference; it should not be treated as the current application layer.
+- `SD-04` in [`diagram/SQ_Diagram.md`](../diagram/SQ_Diagram.md) now documents the **target** auto-generated store slug flow. The current backend schema still requires `slug` on `StoreCreate` until that code path is implemented.
+
 ### Responsibility split
 
 | Layer | Owns |
@@ -96,6 +102,10 @@ Delegates profile updates to the `Store.update_profile()` domain method.
 #### `update_store(store_id: int, update_data: StoreUpdate) -> Store`
 - Delegates to `store.update_profile()` on the entity
 - **Raises:** HTTPException if store not found
+
+#### `is_slug_taken(slug: str) -> bool`
+- Returns `True` if a store with the given slug already exists in the database
+- Used by `GET /api/stores/check-slug` to power the frontend slug availability check
 
 #### `search_stores / get_all_stores`
 - Query and search helpers with pagination

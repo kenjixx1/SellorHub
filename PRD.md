@@ -1216,6 +1216,8 @@ backend/
 **Acceptance Criteria:**
 - [ ] Store creation form has name, slug, description, logo upload
 - [ ] Slug validation (URL-safe, unique, cannot be changed later)
+- [ ] "Generate slug" button generates a random available slug and pre-fills the slug field
+- [ ] Slug availability is checked live (on blur and after generation) via `GET /api/stores/check-slug`
 - [ ] Store is immediately accessible at `/store/{slug}`
 - [ ] Success message with link to store page
 - [ ] One store per seller enforced

@@ -1,9 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { sellerService } from '../lib/services/sellerService'
 import { storeService } from '../lib/services/storeService'
 import { ApiError } from '../lib/api'
+
+function generateCandidateSlug(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  const buf = new Uint8Array(8)
+  crypto.getRandomValues(buf)
+  const suffix = Array.from(buf)
+    .map((b) => chars[b % chars.length])
+    .join('')
+  return `store-${suffix}`
+}
 
 export default function StoreSettingsPage() {
   const { user, token, loading: authLoading } = useAuth()
@@ -25,7 +35,15 @@ export default function StoreSettingsPage() {
   
 
   const [slugTouched, setSlugTouched] = useState(false)
-  const isValidSlug = /^[a-z0-9-]+$/.test(slug) && slug.length > 0
+  const isValidSlug =
+    /^[a-z0-9-]+$/.test(slug) &&
+    slug.length >= 3 &&
+    !slug.startsWith('-') &&
+    !slug.endsWith('-')
+
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const lastCheckedSlug = useRef<string>('')
 
   useEffect(() => {
     if (!activeToken || !user || user.role !== 'seller' || !user.selling_approve) return
@@ -71,6 +89,40 @@ export default function StoreSettingsPage() {
         <p>You must be approved to manage a store.</p>
       </div>
     )
+  }
+
+  const handleSlugBlur = async () => {
+    if (!isValidSlug || slug === lastCheckedSlug.current) return
+    lastCheckedSlug.current = slug
+    try {
+      const result = await storeService.checkSlug(slug)
+      setSlugAvailable(result.available)
+    } catch {
+      setSlugAvailable(null)
+    }
+  }
+
+  const handleGenerateSlug = async () => {
+    setGenerating(true)
+    setSlugAvailable(null)
+    try {
+      for (let i = 0; i < 10; i++) {
+        const candidate = generateCandidateSlug()
+        const result = await storeService.checkSlug(candidate)
+        if (result.valid && result.available) {
+          setSlug(candidate)
+          setSlugTouched(true)
+          setSlugAvailable(true)
+          lastCheckedSlug.current = candidate
+          return
+        }
+      }
+      setError('Could not find an available slug. Please try again.')
+    } catch {
+      setError('Failed to generate a slug. Please try manually.')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,23 +199,47 @@ export default function StoreSettingsPage() {
 
         <div className="form-group">
           <label className="form-label">Store URL / Slug</label>
-          <input 
-            type="text" 
-            className="form-input" 
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.target.value)
-              setSlugTouched(true)
-            }}
-            disabled={isEdit}
-            required
-            placeholder="e.g., nisa-jewelry"
-          />
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <input
+              type="text"
+              className="form-input"
+              value={slug}
+              onChange={(e) => {
+                setSlug(e.target.value)
+                setSlugTouched(true)
+                setSlugAvailable(null)
+              }}
+              onBlur={!isEdit ? handleSlugBlur : undefined}
+              disabled={isEdit}
+              required
+              placeholder="e.g., nisa-jewelry"
+              style={{ flex: 1 }}
+            />
+            {!isEdit && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleGenerateSlug}
+                disabled={generating}
+                style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+              >
+                {generating ? 'Generating…' : 'Generate slug'}
+              </button>
+            )}
+          </div>
           {!isEdit && (
-            <p className={`validation-hint ${slugTouched ? (isValidSlug ? 'valid' : 'invalid') : ''}`}>
-              Only lowercase letters, numbers, and hyphens. Cannot be changed later.
-              {slugTouched && !isValidSlug && " Invalid format."}
-            </p>
+            <>
+              <p className={`validation-hint ${slugTouched ? (isValidSlug ? 'valid' : 'invalid') : ''}`}>
+                Only lowercase letters, numbers, and hyphens (min 3 chars). Cannot be changed later.
+                {slugTouched && !isValidSlug && ' Invalid format.'}
+              </p>
+              {slugTouched && isValidSlug && slugAvailable === true && (
+                <p className="validation-hint valid">Slug is available.</p>
+              )}
+              {slugTouched && isValidSlug && slugAvailable === false && (
+                <p className="validation-hint invalid">Slug is already taken.</p>
+              )}
+            </>
           )}
         </div>
 
@@ -198,7 +274,7 @@ export default function StoreSettingsPage() {
           <button 
             type="submit" 
             className="btn-primary" 
-            disabled={submitting || (!isEdit && !isValidSlug)}
+            disabled={submitting || (!isEdit && !isValidSlug) || (!isEdit && slugAvailable === false)}
           >
             {submitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create Store')}
           </button>

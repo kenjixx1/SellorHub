@@ -32,7 +32,8 @@
   - logo_url: str (optional)
   - created_at: datetime
 - Methods:
-  - (inherited from SQLAlchemy Base)
+  - is_owned_by(user_id: int) → bool
+  - update_profile(name, description, logo_url) → None
 
 ---
 
@@ -60,7 +61,12 @@
   - created_at: datetime
   - updated_at: datetime
 - Methods:
-  - (inherited from SQLAlchemy Base)
+  - is_purchasable(quantity: int = 1) → bool
+  - assert_purchasable(quantity: int = 1) → None
+  - line_total(quantity: int) → decimal
+  - reserve_stock(quantity: int) → None
+  - hide() → None
+  - activate() → None
 
 ---
 
@@ -136,7 +142,11 @@
   - created_at: datetime
   - updated_at: datetime
 - Methods:
-  - (inherited from SQLAlchemy Base)
+  - allowed_transitions(is_seller: bool = False, is_buyer: bool = False) → Set[OrderStatus]
+  - can_transition_to(new_status: OrderStatus, is_seller: bool = False, is_buyer: bool = False) → bool
+  - assert_transition(new_status: OrderStatus, is_seller: bool = False, is_buyer: bool = False) → None
+  - apply_transition(new_status: OrderStatus, is_seller: bool = False, is_buyer: bool = False) → None
+  - calculate_total() → decimal
 
 ---
 
@@ -212,11 +222,11 @@
 
 ---
 
-## 3. Service Classes
+## 3. System Classes
 
 ---
 
-### AuthService
+### AuthSystem
 - Attributes:
   - db: Session
 - Methods:
@@ -227,7 +237,7 @@
 
 ---
 
-### UserService
+### UserSystem
 - Attributes:
   - db: Session
 - Methods:
@@ -237,13 +247,14 @@
 
 ---
 
-### StoreService
+### StoreSystem
 - Attributes:
   - db: Session
 - Methods:
   - create_store(store_data: StoreCreate, owner_id: int) → Store
   - get_store_by_id(store_id: int) → Optional[Store]
   - get_store_by_slug(slug: str) → Optional[Store]
+  - is_slug_taken(slug: str) → bool
   - get_store_by_owner_id(owner_id: int) → Optional[Store]
   - get_all_stores(skip, limit) → tuple[List[Store], int]
   - get_store_with_product_count(store_id: int) → Optional[dict]
@@ -253,7 +264,7 @@
 
 ---
 
-### ProductGroupService
+### ProductGroupSystem
 - Attributes:
   - db: Session
 - Methods:
@@ -266,37 +277,37 @@
 
 ---
 
-### ProductService
+### ProductSystem
 - Attributes:
   - db: Session
 - Methods:
   - create_product(product_data: ProductCreate, store_id: int) → Product
-  - get_product_by_id(product_id: int, include_hidden: bool) → Optional[Product]
-  - get_store_products(store_id, filters, skip, limit) → tuple[List[Product], int]
-  - search_products(query, filters, skip, limit) → tuple[List[Product], int]
+  - get_product_by_id(product_id: int, include_hidden: bool = False) → Optional[Product]
+  - get_store_products(store_id, skip, limit, group_id, status, include_hidden) → tuple[List[Product], int]
+  - search_products(search_query, min_price, max_price, group_ids, store_ids, status, skip, limit, sort_by) → tuple[List[Product], int]
   - update_product(product_id: int, update_data: ProductUpdate, store_id: int) → Product
   - delete_product(product_id: int, store_id: int) → bool
   - add_product_image(image_data: ProductImageCreate) → ProductImage
   - delete_product_image(image_id: int, store_id: int) → bool
-  - reorder_product_images(product_id: int, image_positions: dict, store_id: int) → List[ProductImage]
+  - reorder_product_images(product_id: int, image_positions: dict[int, int], store_id: int) → List[ProductImage]
 
 ---
 
-### InquiryService
+### InquirySystem
 - Attributes:
   - db: Session
 - Methods:
   - create_inquiry(inquiry_data: InquiryCreate) → Inquiry
   - get_inquiry_by_id(inquiry_id: int) → Optional[Inquiry]
-  - get_store_inquiries(store_id, status_filter, skip, limit) → tuple[List[Inquiry], int]
+  - get_store_inquiries(store_id, status, skip, limit) → tuple[List[Inquiry], int]
   - get_product_inquiries(product_id, skip, limit) → tuple[List[Inquiry], int]
-  - update_inquiry_status(inquiry_id: int, status: InquiryStatus, store_id: int) → Inquiry
+  - update_inquiry_status(inquiry_id: int, update_data: InquiryUpdate, store_id: int) → Inquiry
   - delete_inquiry(inquiry_id: int, store_id: int) → bool
   - get_inquiry_statistics(store_id: int) → dict
 
 ---
 
-### CartService
+### CartSystem
 - Attributes:
   - db: Session
 - Methods:
@@ -308,7 +319,7 @@
 
 ---
 
-### AddressService
+### AddressSystem
 - Attributes:
   - db: Session
 - Methods:
@@ -320,7 +331,7 @@
 
 ---
 
-### OrderService
+### OrderSystem
 - Attributes:
   - db: Session
 - Methods:
@@ -333,7 +344,7 @@
 
 ---
 
-### RatingService
+### RatingSystem
 - Attributes:
   - db: Session
 - Methods:
@@ -344,18 +355,18 @@
 
 ---
 
-### AdminService
+### AdminSystem
 - Attributes:
   - db: Session
 - Methods:
-  - get_all_users(role_filter, skip, limit) → tuple[List[User], int]
+  - get_all_users(role, skip, limit) → tuple[List[User], int]
   - get_pending_sellers(skip, limit) → tuple[List[User], int]
   - approve_seller(user_id: int, approve: bool) → User
-  - search_users(query, skip, limit) → tuple[List[User], int]
+  - search_users(search_query, skip, limit) → tuple[List[User], int]
   - ban_user(user_id: int) → User
   - get_all_stores(skip, limit) → tuple[List[Store], int]
   - hide_store(store_id: int, hide: bool) → Store
-  - get_all_products(skip, limit) → tuple[List[Product], int]
+  - get_all_products(skip, limit, status) → tuple[List[Product], int]
   - hide_product(product_id: int) → Product
   - unhide_product(product_id: int) → Product
   - get_platform_statistics() → dict
@@ -409,10 +420,10 @@
 - Token: access_token, token_type, expires_in, user (UserResponse)
 
 ### Store Schemas
-- StoreBase: name, slug, description, logo_url
-- StoreCreate (extends StoreBase): (with slug validation)
+- StoreBase: name, description, logo_url
+- StoreCreate (extends StoreBase): slug (current API requirement, planned for auto-generation in the target SD-04 flow)
 - StoreUpdate: name, description, logo_url (all optional)
-- StoreResponse (extends StoreBase): id, owner, product_count, created_at
+- StoreResponse (extends StoreBase): id, slug, owner_id, product_count, created_at
 - StoreWithProducts (extends StoreResponse): products (list)
 
 ### ProductGroup Schemas
@@ -588,18 +599,18 @@
 
 ---
 
-### Service → Model Dependencies
+### System → Model Dependencies
 
-- AuthService → User
-- UserService → User
-- StoreService → Store, Product
-- ProductGroupService → ProductGroup, Product
-- ProductService → Product, ProductImage, Store
-- InquiryService → Inquiry, Store, Product
-- CartService → CartItem, Product
-- AddressService → Address, User
-- OrderService → Order, OrderItem, OrderStatusHistory, CartItem, Product, Store, Address
-- RatingService → StoreRating, Order, Store, User
-- AdminService → User, Store, Product
+- AuthSystem → User
+- UserSystem → User
+- StoreSystem → Store, Product
+- ProductGroupSystem → ProductGroup, Product
+- ProductSystem → Product, ProductImage, Store
+- InquirySystem → Inquiry, Store, Product
+- CartSystem → CartItem, Product
+- AddressSystem → Address, User
+- OrderSystem → Order, OrderItem, OrderStatusHistory, CartItem, Product, Store, Address
+- RatingSystem → StoreRating, Order, Store, User
+- AdminSystem → User, Store, Product
 
 ---

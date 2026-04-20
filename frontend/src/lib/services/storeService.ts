@@ -1,6 +1,12 @@
 import { apiClient } from '../api'
 import type { StoreProfile, ProductGroup, StoreListFilters, StoreListResponse, StoreProductsFilters, StoreProductsResponse } from '../types'
 
+export type SlugCheckResponse = {
+  slug: string
+  valid: boolean
+  available: boolean
+}
+
 export type CreateStorePayload = {
   name: string
   slug: string
@@ -42,6 +48,12 @@ export class StoreService {
     if (filters.limit != null) params.set('limit', String(filters.limit))
     const qs = params.toString()
     return apiClient.fetch<StoreProductsResponse>(`/api/stores/${slug}/products${qs ? `?${qs}` : ''}`)
+  }
+
+  async checkSlug(slug: string): Promise<SlugCheckResponse> {
+    return apiClient.fetch<SlugCheckResponse>(
+      `/api/stores/check-slug?slug=${encodeURIComponent(slug)}`
+    )
   }
 
   async create(token: string, data: CreateStorePayload): Promise<StoreProfile> {

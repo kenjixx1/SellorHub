@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_active_seller, Pagination
 from app.models.user import User
-from app.schemas.store import StoreCreate, StoreUpdate, StoreResponse
+from app.schemas.store import StoreCreate, StoreUpdate, StoreResponse, SlugCheckResponse, validate_slug_format
 from app.schemas.product import ProductResponse, ProductListResponse
 from app.models.product import ProductStatus
 from app.systems.store_system import StoreSystem
@@ -28,6 +28,16 @@ def list_stores(search: Optional[str]=Query(None, description='Search stores by 
         store_dict = {'id': store.id, 'slug': store.slug, 'name': store.name, 'description': store.description, 'logo_url': store.logo_url, 'owner_id': store.owner_id, 'created_at': store.created_at, 'product_count': count}
         results.append(store_dict)
     return pagination.get_response(total=total, items=results)
+
+@router.get('/check-slug', response_model=SlugCheckResponse, summary='Check slug availability', description='Check whether a store slug is valid in format and not yet taken. No auth required.')
+def check_slug(slug: str = Query(..., min_length=1, max_length=50, description='Slug to check'), db: Session = Depends(get_db)):
+    slug = slug.strip()
+    valid, _ = validate_slug_format(slug)
+    if not valid or len(slug) < 3:
+        return SlugCheckResponse(slug=slug, valid=False, available=False)
+    system = StoreSystem(db)
+    return SlugCheckResponse(slug=slug, valid=True, available=not system.is_slug_taken(slug))
+
 
 @router.get('/{slug}', summary='Get store by slug', description="View a store's public profile page.")
 def get_store(slug: str, db: Session=Depends(get_db)):

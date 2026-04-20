@@ -40,6 +40,8 @@ class OrderService:
             order_items.append(OrderItem(product_id=product.id, product_title_snapshot=product.title, unit_price_snapshot=product.price, quantity=ci.quantity))
             if product.stock is not None:
                 product.stock -= ci.quantity
+
+                
         order = Order(order_number=f'ORD-{uuid.uuid4().hex[:10].upper()}', buyer_id=buyer_id, store_id=store_id, status=OrderStatus.PLACED, total_amount=total, currency='THB', shipping_address_id=shipping_address_id, items=order_items)
         self.db.add(order)
         initial_history = OrderStatusHistory(order=order, status=OrderStatus.PLACED, note='Order placed', changed_by_user_id=buyer_id)
@@ -54,11 +56,15 @@ class OrderService:
         address = self.db.query(Address).filter(Address.id == data.shipping_address_id, Address.user_id == buyer_id).first()
         if not address:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Shipping address not found')
+
         store = self.db.query(Store).filter(Store.id == data.store_id).first()
+
         if not store:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Store not found')
+
         order_items: list[OrderItem] = []
         total = Decimal('0')
+
         for item in data.items:
             product = self.db.query(Product).filter(Product.id == item.product_id).first()
             if not product or product.store_id != data.store_id:
@@ -67,6 +73,7 @@ class OrderService:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Product '{product.title}' is not available")
             if product.stock is not None and product.stock < item.quantity:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Insufficient stock for '{product.title}'")
+
             line_total = Decimal(str(product.price)) * item.quantity
             total += line_total
             order_items.append(OrderItem(product_id=product.id, product_title_snapshot=product.title, unit_price_snapshot=product.price, quantity=item.quantity))

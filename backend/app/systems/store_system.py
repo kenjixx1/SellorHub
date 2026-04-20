@@ -47,6 +47,9 @@ class StoreSystem:
     def get_store_by_slug(self, slug: str) -> Optional[Store]:
         return self.db.query(Store).filter(Store.slug == slug).first()
 
+    def is_slug_taken(self, slug: str) -> bool:
+        return self.db.query(Store.id).filter(Store.slug == slug).first() is not None
+
     def get_store_by_owner_id(self, owner_id: int) -> Optional[Store]:
         return self.db.query(Store).filter(Store.owner_id == owner_id).first()
 

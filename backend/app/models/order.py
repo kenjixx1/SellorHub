@@ -65,8 +65,7 @@ class Order(Base):
 
     # ── Domain behaviour ──────────────────────────────────────────────────────
 
-    def allowed_transitions(self, is_seller: bool = False, is_buyer: bool = False) -> Set[OrderStatus]:
-        """Return the set of statuses this order may move to for the given actor."""
+    def allowed_transitions(self, is_seller: bool = False, is_buyer: bool = False) -> Set[OrderStatus]: #get allow status
         allowed: Set[OrderStatus] = set()
         if is_seller:
             allowed |= _SELLER_TRANSITIONS.get(self.status, set())
@@ -95,11 +94,14 @@ class Order(Base):
         self.status = new_status
 
     def calculate_total(self) -> Decimal:
-        """Sum unit_price_snapshot * quantity across all order items."""
-        return sum(
-            Decimal(str(item.unit_price_snapshot)) * item.quantity
-            for item in self.items
-        )
+        total = Decimal("0")
+
+        for item in self.items:
+            price = Decimal(str(item.unit_price_snapshot))
+            subtotal = price * item.quantity
+            total += subtotal
+
+        return total
 
     def __repr__(self):
         return f'<Order(id={self.id}, order_number={self.order_number}, status={self.status})>'
