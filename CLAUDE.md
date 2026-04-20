@@ -22,6 +22,13 @@ SellorHub is a multi-store e-commerce platform for small sellers in Southeast As
 - Validation: Pydantic
 - Auth security: JWT + bcrypt password hashing
 
+## Architecture (OOP Hybrid Design)
+The backend follows a **hybrid OOP** pattern:
+- **Models** (`models/`) own domain rules: availability, status transitions, invariants, calculations.
+- **Systems** (`systems/`) orchestrate use cases: queries, transactions, cross-entity workflows.
+- **Schemas** (`schemas/`) are plain DTOs (request/response only).
+- **Routers** (`routers/`) are thin HTTP adapters.
+
 ## Current backend structure
 Backend code lives under `backend/app/`:
 - `config.py`: All app settings via `pydantic_settings.BaseSettings` (reads `.env`)
@@ -35,9 +42,10 @@ Backend code lives under `backend/app/`:
   - Core: `user.py`, `store.py`, `product_group.py`, `product.py`, `product_image.py`, `inquiry.py`
   - Commerce: `cart.py`, `address.py`, `order.py`
   - Ratings: `rating.py`
-- `services/`: business logic layer (DB operations & core rules)
-  - `auth_service.py`, `user_service.py`, `store_service.py`, `product_group_service.py`, `product_service.py`, `inquiry_service.py`, `admin_service.py`
-  - `cart_service.py`, `address_service.py`, `order_service.py`, `rating_service.py`
+- `systems/`: application orchestration layer — renamed from `services/` as part of OOP refactor (DB queries, transactions, cross-entity workflows)
+  - `auth_system.py`, `user_system.py`, `store_system.py`, `product_group_system.py`, `product_system.py`, `inquiry_system.py`, `admin_system.py`
+  - `cart_system.py`, `address_system.py`, `order_system.py`, `rating_system.py`
+- `services/`: legacy folder retained for reference; all active code is in `systems/`
 - `routers/`: FastAPI route definitions (API endpoints)
   - `auth.py`, `stores.py`, `products.py`, `product_groups.py`, `inquiries.py`, `admin.py`
   - `users.py` (profile update + avatar upload), `cart.py`, `addresses.py`, `orders.py`, `ratings.py`

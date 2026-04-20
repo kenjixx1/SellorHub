@@ -1,23 +1,42 @@
+"""
+OrderItem model - a single line inside an order.
+"""
+from decimal import Decimal
 from sqlalchemy import Column, Integer, String, Numeric, ForeignKey
 from sqlalchemy.orm import relationship
+
 from app.database import Base
 
+
 class OrderItem(Base):
+    """
+    OrderItem entity.
+    Owns line-total calculation and snapshot helpers.
+    """
     __tablename__ = 'order_items'
+
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     order_id = Column(Integer, ForeignKey('orders.id', ondelete='CASCADE'), nullable=False, index=True)
     product_id = Column(Integer, ForeignKey('products.id', ondelete='SET NULL'), nullable=True)
     product_title_snapshot = Column(String(200), nullable=False)
     unit_price_snapshot = Column(Numeric(10, 2), nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
+
     order = relationship('Order', back_populates='items')
     product = relationship('Product', back_populates='order_items')
 
-    def __repr__(self):
-        return f'<OrderItem(id={self.id}, order_id={self.order_id}, product_id={self.product_id})>'
+    # ── Domain behaviour ──────────────────────────────────────────────────────
+
+    def line_total(self) -> Decimal:
+        """Return unit_price_snapshot * quantity for this line."""
+        return Decimal(str(self.unit_price_snapshot)) * self.quantity
 
     @property
-    def product_image_url(self):
+    def product_image_url(self) -> str | None:
+        """Convenience accessor for the first product image (if still available)."""
         if self.product and self.product.images:
             return self.product.images[0].image_url
         return None
+
+    def __repr__(self):
+        return f'<OrderItem(id={self.id}, order_id={self.order_id}, product_id={self.product_id})>'

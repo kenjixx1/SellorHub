@@ -2,6 +2,14 @@
 
 This document provides an overview of all classes created for the Sellor platform backend.
 
+## Architecture (OOP Hybrid Design)
+
+The backend follows a **hybrid OOP** design:
+- **Models / entities** (`app/models/`) own domain rules: availability checks, status transitions, calculations, and invariants.
+- **Systems** (`app/systems/`) orchestrate use cases: DB queries, transactions, and multi-entity workflows. Previously named `services/`.
+- **Schemas** (`app/schemas/`) are plain DTOs for request/response validation.
+- **Routers** (`app/routers/`) are thin HTTP adapters.
+
 ## Project Structure
 
 ```
@@ -12,35 +20,35 @@ backend/
 │   ├── database.py               # Database connection setup
 │   ├── dependencies.py           # FastAPI dependency injection functions
 │   │
-│   ├── models/                   # SQLAlchemy ORM Models
+│   ├── models/                   # SQLAlchemy ORM Entities (own domain rules)
 │   │   ├── __init__.py
 │   │   ├── user.py              # User account model
-│   │   ├── store.py             # Store model
-│   │   ├── product_group.py     # Product category model
-│   │   ├── product.py           # Product listing model
+│   │   ├── store.py             # Store entity (update_profile, is_owned_by)
+│   │   ├── product_group.py     # ProductGroup entity (belongs_to_store, rename)
+│   │   ├── product.py           # Product entity (assert_purchasable, reserve_stock, hide, activate)
 │   │   ├── product_image.py     # Product image model
-│   │   ├── inquiry.py           # Buyer-seller inquiry model
-│   │   ├── cart.py              # Cart line items (per buyer)
+│   │   ├── inquiry.py           # Inquiry entity (belongs_to_store, update_status, mark_replied, close)
+│   │   ├── cart.py              # CartItem entity (subtotal, merge_quantity, set_quantity)
 │   │   ├── address.py           # Shipping address model
-│   │   ├── order.py             # Order model
-│   │   ├── order_item.py        # Order line item model
+│   │   ├── order.py             # Order entity (apply_transition, assert_transition, calculate_total)
+│   │   ├── order_item.py        # OrderItem entity (line_total)
 │   │   ├── order_status_history.py  # Order status audit log
 │   │   ├── shipment.py          # Shipment tracking model
 │   │   └── store_rating.py      # Store ratings / reviews
 │   │
-│   ├── services/                 # Business logic layer
+│   ├── systems/                  # Application orchestration layer (renamed from services/)
 │   │   ├── __init__.py
-│   │   ├── auth_service.py
-│   │   ├── user_service.py
-│   │   ├── store_service.py
-│   │   ├── product_group_service.py
-│   │   ├── product_service.py
-│   │   ├── inquiry_service.py
-│   │   ├── cart_service.py
-│   │   ├── address_service.py
-│   │   ├── order_service.py
-│   │   ├── rating_service.py
-│   │   └── admin_service.py
+│   │   ├── auth_system.py
+│   │   ├── user_system.py
+│   │   ├── store_system.py
+│   │   ├── product_group_system.py
+│   │   ├── product_system.py
+│   │   ├── inquiry_system.py
+│   │   ├── cart_system.py
+│   │   ├── address_system.py
+│   │   ├── order_system.py
+│   │   ├── rating_system.py
+│   │   └── admin_system.py
 │   │
 │   ├── schemas/                  # Pydantic Schemas (DTOs)
 │   │   ├── __init__.py

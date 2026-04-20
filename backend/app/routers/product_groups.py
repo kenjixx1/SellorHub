@@ -6,7 +6,7 @@ from app.dependencies import get_current_active_seller, get_user_store
 from app.models.user import User
 from app.models.store import Store
 from app.schemas.product_group import ProductGroupCreate, ProductGroupResponse
-from app.services.product_group_service import ProductGroupService
+from app.systems.product_group_system import ProductGroupSystem
 router = APIRouter(prefix='/api/product-groups', tags=['Product Categories'])
 
 class ProductGroupNameUpdate(BaseModel):
@@ -14,22 +14,22 @@ class ProductGroupNameUpdate(BaseModel):
 
 @router.post('', response_model=ProductGroupResponse, status_code=status.HTTP_201_CREATED, summary='Create a product category', description='Add a new category to your store for organizing products.')
 def create_product_group(group_data: ProductGroupCreate, current_user: User=Depends(get_current_active_seller), store: Store=Depends(get_user_store), db: Session=Depends(get_db)):
-    service = ProductGroupService(db)
-    group = service.create_product_group(group_data, store_id=store.id)
+    system = ProductGroupSystem(db)
+    group = system.create_product_group(group_data, store_id=store.id)
     return {'id': group.id, 'name': group.name, 'store_id': group.store_id, 'created_at': group.created_at, 'product_count': 0}
 
 @router.get('/my-store', response_model=list[ProductGroupResponse], summary="List my store's categories", description='Returns all categories in your store with product counts.')
 def list_my_product_groups(current_user: User=Depends(get_current_active_seller), store: Store=Depends(get_user_store), db: Session=Depends(get_db)):
-    service = ProductGroupService(db)
-    return service.get_store_product_groups_with_counts(store.id)
+    system = ProductGroupSystem(db)
+    return system.get_store_product_groups_with_counts(store.id)
 
 @router.put('/{group_id}', response_model=ProductGroupResponse, summary='Rename a product category', description='Update the name of a product category.')
 def update_product_group(group_id: int, update_data: ProductGroupNameUpdate, current_user: User=Depends(get_current_active_seller), store: Store=Depends(get_user_store), db: Session=Depends(get_db)):
-    service = ProductGroupService(db)
-    group = service.update_product_group(group_id, update_data.name, store_id=store.id)
+    system = ProductGroupSystem(db)
+    group = system.update_product_group(group_id, update_data.name, store_id=store.id)
     return {'id': group.id, 'name': group.name, 'store_id': group.store_id, 'created_at': group.created_at, 'product_count': 0}
 
 @router.delete('/{group_id}', status_code=status.HTTP_204_NO_CONTENT, summary='Delete a product category', description='Delete a category. Products in this category will become uncategorized.')
 def delete_product_group(group_id: int, current_user: User=Depends(get_current_active_seller), store: Store=Depends(get_user_store), db: Session=Depends(get_db)):
-    service = ProductGroupService(db)
-    service.delete_product_group(group_id, store_id=store.id)
+    system = ProductGroupSystem(db)
+    system.delete_product_group(group_id, store_id=store.id)
