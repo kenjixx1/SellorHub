@@ -1,11 +1,10 @@
 """
-AdminSystem - application-layer orchestration for admin operations.
-Delegates product visibility changes to the Product entity.
+AdminSystem - application-layer orchestration for admin-facing workflows.
+Delegates domain-specific CRUD and moderation to stronger domain systems.
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional, List
 
-from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -13,79 +12,55 @@ from app.models.inquiry import Inquiry
 from app.models.product import Product, ProductStatus
 from app.models.store import Store
 from app.models.user import User, UserRole
+from app.systems.product_system import ProductSystem
+from app.systems.store_system import StoreSystem
+from app.systems.user_system import UserSystem
 
 
 class AdminSystem:
-    """Orchestrates admin user, store, product, and statistics workflows."""
+    """Coordinates admin workflows while delegating domain operations to other systems."""
 
     def __init__(self, db: Session):
         self.db = db
 
+    def _user_system(self) -> UserSystem:
+        return UserSystem(self.db)
+
+    def _store_system(self) -> StoreSystem:
+        return StoreSystem(self.db)
+
+    def _product_system(self) -> ProductSystem:
+        return ProductSystem(self.db)
+
     def get_all_users(
         self, role: Optional[UserRole] = None, skip: int = 0, limit: int = 50
     ) -> tuple[List[User], int]:
-        query = self.db.query(User)
-        if role is not None:
-            query = query.filter(User.role == role)
-        total = query.count()
-        users = query.order_by(User.created_at.desc()).offset(skip).limit(limit).all()
-        return users, total
+        return self._user_system().get_all_users(role=role, skip=skip, limit=limit)
 
     def get_pending_sellers(self, skip: int = 0, limit: int = 50) -> tuple[List[User], int]:
-        query = self.db.query(User).filter(
-            User.role == UserRole.SELLER, User.selling_approve == False
-        )
-        total = query.count()
-        sellers = query.order_by(User.created_at.asc()).offset(skip).limit(limit).all()
-        return sellers, total
+        return self._user_system().get_pending_sellers(skip=skip, limit=limit)
+
+    def get_user_by_id(self, user_id: int) -> Optional[User]:
+        return self._user_system().get_user_by_id(user_id)
 
     def approve_seller(self, user_id: int, approve: bool = True) -> User:
-        user = self.db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
-        if user.role != UserRole.SELLER:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail='User is not a seller'
-            )
-        user.selling_approve = approve
-        self.db.commit()
-        self.db.refresh(user)
-        return user
+        return self._user_system().approve_seller(user_id, approve=approve)
 
     def search_users(
         self, search_query: str, skip: int = 0, limit: int = 50
     ) -> tuple[List[User], int]:
-        from sqlalchemy import or_
-        search_filter = or_(
-            User.username.ilike(f'%{search_query}%'),
-            User.email.ilike(f'%{search_query}%'),
-        )
-        query = self.db.query(User).filter(search_filter)
-        total = query.count()
-        users = query.offset(skip).limit(limit).all()
-        return users, total
+        return self._user_system().search_users(search_query, skip=skip, limit=limit)
 
-    def ban_user(self, user_id: int) -> User:
-        user = self.db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
-        if user.role == UserRole.SELLER:
-            user.selling_approve = False
-            self.db.commit()
-            self.db.refresh(user)
-        return user
+    def delete_user(self, user_id: int) -> bool:
+        return self._user_system().delete_user(user_id)
 
     def get_all_stores(self, skip: int = 0, limit: int = 50) -> tuple[List[Store], int]:
-        query = self.db.query(Store)
-        total = query.count()
-        stores = query.order_by(Store.created_at.desc()).offset(skip).limit(limit).all()
-        return stores, total
+        return self._store_system().get_all_stores(skip=skip, limit=limit)
 
-    def hide_store(self, store_id: int, hide: bool = True) -> Store:
-        store = self.db.query(Store).filter(Store.id == store_id).first()
-        if not store:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Store not found')
-        return store
+    def search_stores(
+        self, search_query: str, skip: int = 0, limit: int = 50
+    ) -> tuple[List[Store], int]:
+        return self._store_system().search_stores(search_query, skip=skip, limit=limit)
 
     def get_all_products(
         self,
@@ -93,30 +68,13 @@ class AdminSystem:
         limit: int = 50,
         status: Optional[ProductStatus] = None,
     ) -> tuple[List[Product], int]:
-        query = self.db.query(Product)
-        if status is not None:
-            query = query.filter(Product.status == status)
-        total = query.count()
-        products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
-        return products, total
+        return self._product_system().get_all_products(skip=skip, limit=limit, status=status)
 
     def hide_product(self, product_id: int) -> Product:
-        product = self.db.query(Product).filter(Product.id == product_id).first()
-        if not product:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found')
-        product.hide()
-        self.db.commit()
-        self.db.refresh(product)
-        return product
+        return self._product_system().hide_product(product_id)
 
     def unhide_product(self, product_id: int) -> Product:
-        product = self.db.query(Product).filter(Product.id == product_id).first()
-        if not product:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found')
-        product.activate()
-        self.db.commit()
-        self.db.refresh(product)
-        return product
+        return self._product_system().unhide_product(product_id)
 
     def get_platform_statistics(self) -> dict:
         today = datetime.utcnow().date()
@@ -126,7 +84,7 @@ class AdminSystem:
                 'buyers': self.db.query(func.count(User.id)).filter(User.role == UserRole.BUYER).scalar() or 0,
                 'sellers': self.db.query(func.count(User.id)).filter(User.role == UserRole.SELLER).scalar() or 0,
                 'pending_seller_approvals': self.db.query(func.count(User.id)).filter(
-                    User.role == UserRole.SELLER, User.selling_approve == False
+                    User.role == UserRole.SELLER, User.selling_approve.is_(False)
                 ).scalar() or 0,
             },
             'stores': {'total': self.db.query(func.count(Store.id)).scalar() or 0},

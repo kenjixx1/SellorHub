@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import List, Optional, Tuple
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.address import Address
 from app.models.cart import CartItem
@@ -28,6 +28,14 @@ class OrderSystem:
 
     def __init__(self, db: Session):
         self.db = db
+
+    @staticmethod
+    def _order_load_options():
+        return (
+            joinedload(Order.items)
+            .joinedload(OrderItem.product)
+            .selectinload(Product.images),
+        )
 
     # ── checkout ──────────────────────────────────────────────────────────────
 
@@ -134,7 +142,7 @@ class OrderSystem:
     def get_order(self, order_id: int) -> Optional[Order]:
         return (
             self.db.query(Order)
-            .options(joinedload(Order.items))
+            .options(*self._order_load_options())
             .filter(Order.id == order_id)
             .first()
         )
@@ -145,7 +153,7 @@ class OrderSystem:
         q = self.db.query(Order).filter(Order.buyer_id == buyer_id)
         total = q.count()
         orders = (
-            q.options(joinedload(Order.items))
+            q.options(*self._order_load_options())
             .order_by(Order.created_at.desc())
             .offset(skip)
             .limit(limit)
@@ -165,7 +173,7 @@ class OrderSystem:
             q = q.filter(Order.status == status_filter)
         total = q.count()
         orders = (
-            q.options(joinedload(Order.items))
+            q.options(*self._order_load_options())
             .order_by(Order.created_at.desc())
             .offset(skip)
             .limit(limit)

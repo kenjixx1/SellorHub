@@ -43,8 +43,8 @@ Backend code lives under `backend/app/`:
   - Commerce: `cart.py`, `address.py`, `order.py`
   - Ratings: `rating.py`
 - `systems/`: application orchestration layer — renamed from `services/` as part of OOP refactor (DB queries, transactions, cross-entity workflows)
-  - `auth_system.py`, `user_system.py`, `store_system.py`, `product_group_system.py`, `product_system.py`, `inquiry_system.py`, `admin_system.py`
-  - `cart_system.py`, `address_system.py`, `order_system.py`, `rating_system.py`
+  - `auth_system.py`, `user_system.py`, `store_system.py`, `product_system.py`, `inquiry_system.py`, `admin_system.py`
+  - `cart_system.py`, `order_system.py`, `rating_system.py`
 - `services/`: legacy folder retained for reference; all active code is in `systems/`
 - `routers/`: FastAPI route definitions (API endpoints)
   - `auth.py`, `stores.py`, `products.py`, `product_groups.py`, `inquiries.py`, `admin.py`

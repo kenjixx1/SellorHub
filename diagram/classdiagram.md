@@ -264,29 +264,26 @@
 
 ---
 
-### ProductGroupSystem
+### ProductSystem
 - Attributes:
   - db: Session
 - Methods:
+  - _get_store_group(group_id: int, store_id: int) → ProductGroup
   - create_product_group(group_data: ProductGroupCreate, store_id: int) → ProductGroup
   - get_product_group_by_id(group_id: int) → Optional[ProductGroup]
   - get_store_product_groups(store_id: int) → List[ProductGroup]
   - get_store_product_groups_with_counts(store_id: int) → List[dict]
   - update_product_group(group_id: int, name: str, store_id: int) → ProductGroup
   - delete_product_group(group_id: int, store_id: int) → bool
-
----
-
-### ProductSystem
-- Attributes:
-  - db: Session
-- Methods:
   - create_product(product_data: ProductCreate, store_id: int) → Product
   - get_product_by_id(product_id: int, include_hidden: bool = False) → Optional[Product]
   - get_store_products(store_id, skip, limit, group_id, status, include_hidden) → tuple[List[Product], int]
+  - get_all_products(skip, limit, status) → tuple[List[Product], int]
   - search_products(search_query, min_price, max_price, group_ids, store_ids, status, skip, limit, sort_by) → tuple[List[Product], int]
   - update_product(product_id: int, update_data: ProductUpdate, store_id: int) → Product
   - delete_product(product_id: int, store_id: int) → bool
+  - hide_product(product_id: int) → Product
+  - unhide_product(product_id: int) → Product
   - add_product_image(image_data: ProductImageCreate) → ProductImage
   - delete_product_image(image_id: int, store_id: int) → bool
   - reorder_product_images(product_id: int, image_positions: dict[int, int], store_id: int) → List[ProductImage]
@@ -316,18 +313,6 @@
   - update_item(user_id: int, item_id: int, quantity: int) → dict
   - remove_item(user_id: int, item_id: int) → dict
   - clear_cart(user_id: int) → dict
-
----
-
-### AddressSystem
-- Attributes:
-  - db: Session
-- Methods:
-  - list_addresses(user_id: int) → List[Address]
-  - get_address(address_id: int, user_id: int) → Address
-  - create_address(user_id: int, data: AddressCreate) → Address
-  - update_address(address_id: int, user_id: int, data: AddressUpdate) → Address
-  - delete_address(address_id: int, user_id: int) → bool
 
 ---
 
@@ -361,11 +346,12 @@
 - Methods:
   - get_all_users(role, skip, limit) → tuple[List[User], int]
   - get_pending_sellers(skip, limit) → tuple[List[User], int]
+  - get_user_by_id(user_id: int) → Optional[User]
   - approve_seller(user_id: int, approve: bool) → User
   - search_users(search_query, skip, limit) → tuple[List[User], int]
-  - ban_user(user_id: int) → User
+  - delete_user(user_id: int) → bool
   - get_all_stores(skip, limit) → tuple[List[Store], int]
-  - hide_store(store_id: int, hide: bool) → Store
+  - search_stores(search_query, skip, limit) → tuple[List[Store], int]
   - get_all_products(skip, limit, status) → tuple[List[Product], int]
   - hide_product(product_id: int) → Product
   - unhide_product(product_id: int) → Product
@@ -602,15 +588,66 @@
 ### System → Model Dependencies
 
 - AuthSystem → User
-- UserSystem → User
+- UserSystem → User, Address
 - StoreSystem → Store, Product
-- ProductGroupSystem → ProductGroup, Product
-- ProductSystem → Product, ProductImage, Store
+- ProductSystem → ProductGroup, Product, ProductImage
 - InquirySystem → Inquiry, Store, Product
 - CartSystem → CartItem, Product
-- AddressSystem → Address, User
 - OrderSystem → Order, OrderItem, OrderStatusHistory, CartItem, Product, Store, Address
 - RatingSystem → StoreRating, Order, Store, User
-- AdminSystem → User, Store, Product
+- AdminSystem → UserSystem, StoreSystem, ProductSystem, User, Store, Product, Inquiry
+
+---
+
+## 8. Relationships (natural language)
+
+Short sentences describing how entities connect. Use this when you want “who owns what” without diagram notation.
+
+### Identity and storefront
+
+- A **User** can be a buyer, seller, or admin. Sellers need approval before they can operate a store.
+- A **Store** belongs to exactly one **User** (the seller). Each seller has at most one store.
+- A **Store** has a public **slug**; that store is the container for its catalog and orders.
+
+### Catalog
+
+- A **ProductGroup** (category) belongs to one **Store**. A **Store** has many **ProductGroups** (each category name is unique within that store).
+- A **Product** belongs to one **Store**. A **Product** may belong to one **ProductGroup**, or have no group.
+- A **ProductImage** belongs to one **Product**. A **Product** has many images (each slot **position** is unique per product).
+
+### Buyer actions (pre-purchase)
+
+- An **Inquiry** belongs to one **Store** and one **Product** (question about that listing). A **Product** has many inquiries; a **Store** receives many inquiries.
+- A **CartItem** belongs to one **User** (buyer) and one **Product**. A **User** has many cart lines; each product appears at most once per user (quantity merges on the same row).
+- An **Address** belongs to one **User**. A **User** has many saved addresses; orders reference one address as the shipping destination.
+
+### Orders and fulfillment
+
+- An **Order** belongs to one **User** (buyer) and one **Store**. It uses one **Address** as the shipping address for that checkout.
+- An **Order** has many **OrderItem** lines. Each **OrderItem** belongs to one **Order** and optionally still links to a **Product** (for display); title and unit price are **snapshots** on the line.
+- An **Order** has many **OrderStatusHistory** rows (audit trail). Each history row belongs to one **Order** and may record which **User** changed the status.
+- A **Shipment** belongs to one **Order** (at most one shipment record per order). An **Order** may have zero or one shipment.
+
+### Ratings
+
+- A **StoreRating** belongs to one **Store** and one **User** (the buyer who rated). A buyer has at most one rating per store (unique pair).
+- A **StoreRating** may optionally reference one **Order** (which purchase the rating is tied to).
+
+### Summary table (quick scan)
+
+| Entity | Relationship in words |
+|--------|------------------------|
+| Store | Belongs to User (owner); has ProductGroups, Products, Inquiries, Orders, StoreRatings |
+| ProductGroup | Belongs to Store; has Products (optional grouping) |
+| Product | Belongs to Store; may belong to ProductGroup; has ProductImages, Inquiries, CartItems, OrderItems |
+| ProductImage | Belongs to Product |
+| Inquiry | Belongs to Store and Product |
+| CartItem | Belongs to User and Product |
+| Address | Belongs to User; referenced by many Orders as shipping address |
+| Order | Belongs to User (buyer) and Store; uses one Address; has OrderItems, OrderStatusHistory; may have Shipment |
+| OrderItem | Belongs to Order; optional link to Product |
+| OrderStatusHistory | Belongs to Order; optional link to User (who changed status) |
+| Shipment | Belongs to Order |
+| StoreRating | Belongs to Store and User (buyer); optional link to Order |
 
 ---

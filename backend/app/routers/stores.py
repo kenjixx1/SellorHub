@@ -9,7 +9,6 @@ from app.schemas.product import ProductResponse, ProductListResponse
 from app.models.product import ProductStatus
 from app.systems.store_system import StoreSystem
 from app.systems.product_system import ProductSystem
-from app.systems.product_group_system import ProductGroupSystem
 from app.schemas.product_group import ProductGroupResponse
 router = APIRouter(prefix='/api/stores', tags=['Stores'])
 
@@ -69,7 +68,7 @@ def get_store_groups(slug: str, db: Session=Depends(get_db)):
     store = store_system.get_store_by_slug(slug)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Store '{slug}' not found")
-    group_system = ProductGroupSystem(db)
+    group_system = ProductSystem(db)
     groups_with_counts = group_system.get_store_product_groups_with_counts(store.id)
     return groups_with_counts
 

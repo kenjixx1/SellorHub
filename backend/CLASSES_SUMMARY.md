@@ -41,11 +41,9 @@ backend/
 │   │   ├── auth_system.py
 │   │   ├── user_system.py
 │   │   ├── store_system.py
-│   │   ├── product_group_system.py
 │   │   ├── product_system.py
 │   │   ├── inquiry_system.py
 │   │   ├── cart_system.py
-│   │   ├── address_system.py
 │   │   ├── order_system.py
 │   │   ├── rating_system.py
 │   │   └── admin_system.py

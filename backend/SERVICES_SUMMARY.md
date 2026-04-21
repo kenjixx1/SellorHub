@@ -31,6 +31,10 @@ Database
 | **Routers** (`app/routers/`) | HTTP parsing, dependency injection, thin delegation to systems |
 | **Schemas** (`app/schemas/`) | Request/response shapes (DTOs only) |
 
+**Per-method reference:** [`System_Summary.md`](System_Summary.md) lists every `*System` class, each public method, what it does, and a one-line note on how it works.
+
+**Model reference:** [`Model_Summary.md`](Model_Summary.md) lists ORM entities in `app/models/`, enums, columns/relationships overview, and each domain method with a one-line note.
+
 ---
 
 ## System Classes
@@ -65,12 +69,24 @@ Database
 
 ### 2. UserSystem (`app/systems/user_system.py`)
 
-**Purpose:** Orchestrates user profile management workflows.
+**Purpose:** Orchestrates user profile, address-book, and account admin workflows.
 
 **Methods:**
 
 #### `get_user_by_id(user_id: int) -> Optional[User]`
 - Retrieves user by ID
+
+#### `get_all_users(role: Optional[UserRole], skip: int, limit: int) -> tuple[List[User], int]`
+- Admin listing for users with optional role filter
+
+#### `search_users(search_query: str, skip: int, limit: int) -> tuple[List[User], int]`
+- Search users by username or email
+
+#### `get_pending_sellers(skip: int, limit: int) -> tuple[List[User], int]`
+- Lists unapproved seller accounts
+
+#### `approve_seller(user_id: int, approve: bool = True) -> User`
+- Approves or rejects a seller account
 
 #### `update_user_profile(user_id: int, update_data: UserUpdate) -> User`
 - Updates user profile fields
@@ -80,6 +96,21 @@ Database
 #### `delete_user(user_id: int) -> bool`
 - Deletes user account
 - **Raises:** HTTPException if user not found
+
+#### `list_addresses(user_id: int) -> List[Address]`
+- Lists the current user's saved shipping addresses
+
+#### `get_address(address_id: int, user_id: int) -> Address`
+- Loads one owned address or raises 404
+
+#### `create_address(user_id: int, data: AddressCreate) -> Address`
+- Creates a shipping address and keeps a single default
+
+#### `update_address(address_id: int, user_id: int, data: AddressUpdate) -> Address`
+- Partially updates an owned address
+
+#### `delete_address(address_id: int, user_id: int) -> bool`
+- Deletes one owned address
 
 ---
 
@@ -112,25 +143,29 @@ Delegates profile updates to the `Store.update_profile()` domain method.
 
 ---
 
-### 4. ProductGroupSystem (`app/systems/product_group_system.py`)
+### 4. ProductSystem (`app/systems/product_system.py`)
 
-**Purpose:** Orchestrates product-category CRUD.
-Delegates `belongs_to_store()` and `rename()` checks to the `ProductGroup` entity.
-
----
-
-### 5. ProductSystem (`app/systems/product_system.py`)
-
-**Purpose:** Orchestrates product CRUD, image management, and search.
+**Purpose:** Orchestrates product CRUD, product-group management, image management, and search.
 Does **not** duplicate availability/stock checks; those are delegated to `Product.assert_purchasable()` and `Product.reserve_stock()`.
 
 **Key methods:**
 
+#### `create_product_group / get_product_group_by_id / get_store_product_groups / get_store_product_groups_with_counts / update_product_group / delete_product_group`
+- Product-category management now lives inside `ProductSystem`
+- Group ownership and renaming still rely on `ProductGroup.belongs_to_store()` / `rename()`
+
 #### `create_product / update_product / delete_product`
 - Standard CRUD with ownership verification
+- Validates that any `group_id` belongs to the same store before save
 
 #### `search_products(...) -> tuple[List[Product], int]`
 - Advanced filtering: keyword, price range, category, store, sort order
+
+#### `get_all_products(skip: int, limit: int, status: Optional[ProductStatus]) -> tuple[List[Product], int]`
+- Admin listing helper for product moderation screens
+
+#### `hide_product / unhide_product`
+- Admin moderation hooks that delegate visibility state changes to the `Product` entity
 
 #### `add_product_image / delete_product_image / reorder_product_images`
 - Image management with position and count limits
@@ -179,20 +214,25 @@ Delegates:
 
 ---
 
-### 9. AddressSystem (`app/systems/address_system.py`)
+### 9. AdminSystem (`app/systems/admin_system.py`)
 
-**Purpose:** Orchestrates shipping address CRUD.
+**Purpose:** Coordinates admin-facing workflows and platform reporting.
+Delegates domain-specific CRUD and moderation to `UserSystem`, `StoreSystem`, and `ProductSystem`.
+
+**Key methods:**
+
+#### `get_all_users / get_pending_sellers / get_user_by_id / search_users / approve_seller / delete_user`
+- Admin façade methods delegated to `UserSystem`
+
+#### `get_all_stores / search_stores`
+- Admin façade methods delegated to `StoreSystem`
+
+#### `get_all_products / hide_product / unhide_product`
+- Admin façade methods delegated to `ProductSystem`
 
 ---
 
-### 10. AdminSystem (`app/systems/admin_system.py`)
-
-**Purpose:** Orchestrates admin user, store, and product management.
-Delegates `Product.hide()` and `Product.activate()` to the Product entity.
-
----
-
-### 11. RatingSystem (`app/systems/rating_system.py`)
+### 10. RatingSystem (`app/systems/rating_system.py`)
 
 **Purpose:** Orchestrates store rating workflows.
 
@@ -259,18 +299,16 @@ Business rules that were previously duplicated across service/system classes now
 backend/app/systems/
 ├── __init__.py
 ├── auth_system.py           # Authentication & registration
-├── user_system.py           # User profile management
+├── user_system.py           # User accounts, addresses, and admin user actions
 ├── store_system.py          # Store CRUD operations
-├── product_group_system.py  # Product categories
-├── product_system.py        # Product CRUD & search
+├── product_system.py        # Products, categories, images, and moderation
 ├── inquiry_system.py        # Buyer-seller communication
 ├── cart_system.py           # Shopping cart management
 ├── order_system.py          # Checkout & order management
-├── address_system.py        # Shipping addresses
-├── admin_system.py          # Platform administration
+├── admin_system.py          # Admin façade and platform reporting
 └── rating_system.py         # Store ratings
 ```
 
 ---
 
-**Total:** 11 system classes covering all MVP functionality, with domain rules distributed to model entities.
+**Total:** 9 system classes covering all MVP functionality, with domain rules distributed to model entities and thin CRUD systems merged into stronger domains.

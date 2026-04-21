@@ -8,7 +8,6 @@ from app.models.user import User, UserRole
 from app.models.product import ProductStatus
 from app.schemas.user import UserResponse
 from app.systems.admin_system import AdminSystem
-from app.systems.user_system import UserSystem
 router = APIRouter(prefix='/api/admin', tags=['Admin'])
 
 class ApproveSellerRequest(BaseModel):
@@ -38,7 +37,7 @@ def list_pending_sellers(page: int=Query(1, ge=1), limit: int=Query(50, ge=1, le
 
 @router.get('/users/{user_id}', response_model=UserResponse, summary='Get user details', description='View full details for a specific user.')
 def get_user(user_id: int, admin: User=Depends(get_current_admin), db: Session=Depends(get_db)):
-    system = UserSystem(db)
+    system = AdminSystem(db)
     user = system.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
@@ -53,17 +52,15 @@ def approve_seller(user_id: int, body: ApproveSellerRequest, admin: User=Depends
 def delete_user(user_id: int, admin: User=Depends(get_current_admin), db: Session=Depends(get_db)):
     if user_id == admin.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='You cannot delete your own admin account')
-    system = UserSystem(db)
+    system = AdminSystem(db)
     system.delete_user(user_id)
 
 @router.get('/stores', summary='List all stores', description='Admin view of all stores on the platform.')
 def list_all_stores(search: Optional[str]=Query(None), page: int=Query(1, ge=1), limit: int=Query(50, ge=1, le=100), admin: User=Depends(get_current_admin), db: Session=Depends(get_db)):
-    from app.systems.store_system import StoreSystem
     pagination = Pagination(page=page, limit=limit)
     system = AdminSystem(db)
-    store_system = StoreSystem(db)
     if search:
-        stores, total = store_system.search_stores(search, skip=pagination.offset, limit=pagination.limit)
+        stores, total = system.search_stores(search, skip=pagination.offset, limit=pagination.limit)
     else:
         stores, total = system.get_all_stores(skip=pagination.offset, limit=pagination.limit)
     return pagination.get_response(total=total, items=stores)

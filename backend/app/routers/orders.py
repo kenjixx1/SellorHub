@@ -172,6 +172,7 @@ def _order_dict(order) -> dict:
                 'product_title_snapshot': it.product_title_snapshot,
                 'unit_price_snapshot': it.unit_price_snapshot,
                 'quantity': it.quantity,
+                'product_image_url': it.product_image_url,
             }
             for it in order.items
         ],
