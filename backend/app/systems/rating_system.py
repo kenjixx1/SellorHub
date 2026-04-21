@@ -1,6 +1,3 @@
-"""
-RatingSystem - application-layer orchestration for store ratings.
-"""
 from decimal import Decimal
 from typing import List, Optional
 
@@ -15,7 +12,6 @@ from app.schemas.rating import RatingCreate, RatingUpdate
 
 
 class RatingSystem:
-    """Orchestrates rating creation, update, deletion, and aggregation workflows."""
 
     def __init__(self, db: Session):
         self.db = db

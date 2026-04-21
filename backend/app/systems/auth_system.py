@@ -1,6 +1,3 @@
-"""
-AuthSystem - application-layer orchestration for authentication.
-"""
 from datetime import timedelta
 from typing import Optional
 
@@ -14,7 +11,6 @@ from app.utils.security import hash_password, verify_password, create_access_tok
 
 
 class AuthSystem:
-    """Orchestrates user registration and login workflows."""
 
     def __init__(self, db: Session):
         self.db = db

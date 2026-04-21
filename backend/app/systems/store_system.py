@@ -1,6 +1,3 @@
-"""
-StoreSystem - application-layer orchestration for store management.
-"""
 from typing import Optional, List
 
 from fastapi import HTTPException, status
@@ -13,7 +10,6 @@ from app.schemas.store import StoreCreate, StoreUpdate
 
 
 class StoreSystem:
-    """Orchestrates store creation, lookup, update, and search workflows."""
 
     def __init__(self, db: Session):
         self.db = db

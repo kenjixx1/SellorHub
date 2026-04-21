@@ -1,8 +1,3 @@
-"""
-OrderSystem - application-layer orchestration for checkout and order management.
-Delegates status transition rules to the Order entity, and product
-availability/stock rules to the Product entity.
-"""
 import uuid
 from decimal import Decimal
 from typing import List, Optional, Tuple
@@ -18,14 +13,7 @@ from app.models.order_status_history import OrderStatusHistory
 from app.models.product import Product, ProductStatus
 from app.models.store import Store
 from app.schemas.order import OrderCreate
-
-
 class OrderSystem:
-    """
-    Orchestrates checkout (cart and direct), order queries, and status updates.
-    Business rules for status transitions live on Order; product rules live on Product.
-    """
-
     def __init__(self, db: Session):
         self.db = db
 
@@ -37,12 +25,10 @@ class OrderSystem:
             .selectinload(Product.images),
         )
 
-    # ── checkout ──────────────────────────────────────────────────────────────
 
     def create_order_from_cart(
         self, buyer_id: int, store_id: int, shipping_address_id: int
     ) -> Order:
-        """Create an order from the buyer's cart items for a single store."""
         address = (
             self.db.query(Address)
             .filter(Address.id == shipping_address_id, Address.user_id == buyer_id)
@@ -97,7 +83,6 @@ class OrderSystem:
         return order
 
     def create_order_direct(self, buyer_id: int, data: OrderCreate) -> Order:
-        """Create an order from an explicit item list (bypasses cart)."""
         address = (
             self.db.query(Address)
             .filter(Address.id == data.shipping_address_id, Address.user_id == buyer_id)
@@ -137,7 +122,6 @@ class OrderSystem:
         self.db.refresh(order)
         return order
 
-    # ── queries ───────────────────────────────────────────────────────────────
 
     def get_order(self, order_id: int) -> Optional[Order]:
         return (
@@ -181,7 +165,6 @@ class OrderSystem:
         )
         return orders, total
 
-    # ── status updates ────────────────────────────────────────────────────────
 
     def update_order_status(
         self,
@@ -209,18 +192,12 @@ class OrderSystem:
         self.db.refresh(order)
         return order
 
-    # ── internal helpers ──────────────────────────────────────────────────────
 
     def _build_order_items(
         self,
         cart_items_or_specs: Optional[List[CartItem]] = None,
         explicit_specs: Optional[List[tuple]] = None,
     ) -> Tuple[List[OrderItem], Decimal]:
-        """
-        Validate products, build OrderItem rows, and decrement stock.
-        Accepts either CartItem rows or (product_id, quantity, store_id) tuples.
-        Returns (order_items, total).
-        """
         order_items: List[OrderItem] = []
         total = Decimal('0')
 

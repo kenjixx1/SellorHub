@@ -1,7 +1,3 @@
-"""
-InquirySystem - application-layer orchestration for buyer inquiries.
-Delegates lifecycle transitions to the Inquiry entity.
-"""
 from typing import Optional, List
 
 from fastapi import HTTPException, status
@@ -13,7 +9,6 @@ from app.schemas.inquiry import InquiryCreate, InquiryUpdate
 
 
 class InquirySystem:
-    """Orchestrates inquiry submission, retrieval, and status-update workflows."""
 
     def __init__(self, db: Session):
         self.db = db

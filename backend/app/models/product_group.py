@@ -1,6 +1,3 @@
-"""
-ProductGroup model - product category inside a store.
-"""
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -9,10 +6,6 @@ from app.database import Base
 
 
 class ProductGroup(Base):
-    """
-    ProductGroup entity.
-    Owns group identity and store-ownership helpers.
-    """
     __tablename__ = 'product_groups'
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -25,14 +18,11 @@ class ProductGroup(Base):
 
     __table_args__ = (UniqueConstraint('store_id', 'name', name='uq_store_product_group_name'),)
 
-    # ── Domain behaviour ──────────────────────────────────────────────────────
 
     def belongs_to_store(self, store_id: int) -> bool:
-        """Return True when this group belongs to *store_id*."""
         return self.store_id == store_id
 
     def rename(self, new_name: str) -> None:
-        """Update the group name."""
         self.name = new_name
 
     def __repr__(self):

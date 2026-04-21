@@ -1,7 +1,3 @@
-"""
-ProductSystem - application-layer orchestration for product and product-group management.
-Delegates product domain rules to the Product entity and group identity checks to ProductGroup.
-"""
 from typing import Optional, List
 
 from fastapi import HTTPException, status
@@ -17,7 +13,6 @@ from app.schemas.product_image import ProductImageCreate
 
 
 class ProductSystem:
-    """Orchestrates product CRUD, product groups, image management, and search workflows."""
 
     def __init__(self, db: Session):
         self.db = db

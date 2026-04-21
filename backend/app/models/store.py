@@ -1,6 +1,3 @@
-"""
-Store model - seller store profile and public storefront.
-"""
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -9,11 +6,6 @@ from app.database import Base
 
 
 class Store(Base):
-    """
-    Store entity.
-    Each approved seller can create one store with a unique slug.
-    Owns ownership/identity helpers.
-    """
     __tablename__ = 'stores'
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -30,14 +22,11 @@ class Store(Base):
     inquiries = relationship('Inquiry', back_populates='store', cascade='all, delete-orphan')
     orders = relationship('Order', back_populates='store')
 
-    # ── Domain behaviour ──────────────────────────────────────────────────────
 
     def is_owned_by(self, user_id: int) -> bool:
-        """Return True when *user_id* is the owner of this store."""
         return self.owner_id == user_id
 
     def update_profile(self, name: str | None = None, description: str | None = None, logo_url: str | None = None) -> None:
-        """Apply non-null profile field updates in one call."""
         if name is not None:
             self.name = name
         if description is not None:

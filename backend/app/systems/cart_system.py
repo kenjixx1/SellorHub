@@ -1,8 +1,3 @@
-"""
-CartSystem - application-layer orchestration for shopping-cart management.
-Delegates product domain rules to the Product entity and subtotal
-calculation to the CartItem entity.
-"""
 from decimal import Decimal
 from typing import List
 
@@ -14,15 +9,12 @@ from app.models.product import Product, ProductStatus
 
 
 class CartSystem:
-    """Orchestrates cart add, update, remove, clear, and retrieval workflows."""
 
     def __init__(self, db: Session):
         self.db = db
 
-    # ── helpers ───────────────────────────────────────────────────────────────
 
     def _load_purchasable_product(self, product_id: int, quantity: int) -> Product:
-        """Load a product and assert it can be purchased for *quantity* units."""
         product = self.db.query(Product).filter(Product.id == product_id).first()
         if not product:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found')
@@ -39,7 +31,6 @@ class CartSystem:
             .filter(CartItem.user_id == user_id)
         )
 
-    # ── public ────────────────────────────────────────────────────────────────
 
     def get_cart(self, user_id: int) -> dict:
         items: List[CartItem] = (
@@ -103,7 +94,6 @@ class CartSystem:
         self.db.commit()
         return {'items': [], 'total_items': 0, 'total_amount': Decimal('0')}
 
-    # ── serialisation ─────────────────────────────────────────────────────────
 
     @staticmethod
     def _to_response(item: CartItem) -> dict:

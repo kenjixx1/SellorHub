@@ -1,6 +1,3 @@
-"""
-Order model - one checkout result.
-"""
 from decimal import Decimal
 from typing import Optional, Set
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, Enum as SQLEnum
@@ -12,7 +9,6 @@ from app.database import Base
 
 
 class OrderStatus(str, enum.Enum):
-    """Order status enumeration."""
     PLACED = 'placed'
     PAID = 'paid'
     PACKING = 'packing'
@@ -23,8 +19,6 @@ class OrderStatus(str, enum.Enum):
     REFUNDED = 'refunded'
 
 
-# Allowed status transitions keyed by current status.
-# Seller-allowed transitions are the first dict; buyer-allowed the second.
 _SELLER_TRANSITIONS: dict[OrderStatus, Set[OrderStatus]] = {
     OrderStatus.PLACED: {OrderStatus.PACKING, OrderStatus.CANCELLED},
     OrderStatus.PAID: {OrderStatus.PACKING, OrderStatus.CANCELLED},
@@ -38,11 +32,6 @@ _BUYER_TRANSITIONS: dict[OrderStatus, Set[OrderStatus]] = {
 
 
 class Order(Base):
-    """
-    Order entity.
-    Owns status-transition rules and item/total helpers.
-    OrderSystem remains responsible for DB persistence and cross-entity orchestration.
-    """
     __tablename__ = 'orders'
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -63,9 +52,8 @@ class Order(Base):
     status_history = relationship('OrderStatusHistory', back_populates='order', cascade='all, delete-orphan')
     shipment = relationship('Shipment', back_populates='order', uselist=False, cascade='all, delete-orphan')
 
-    # ── Domain behaviour ──────────────────────────────────────────────────────
 
-    def allowed_transitions(self, is_seller: bool = False, is_buyer: bool = False) -> Set[OrderStatus]: #get allow status
+    def allowed_transitions(self, is_seller: bool = False, is_buyer: bool = False) -> Set[OrderStatus]:
         allowed: Set[OrderStatus] = set()
         if is_seller:
             allowed |= _SELLER_TRANSITIONS.get(self.status, set())
@@ -76,20 +64,17 @@ class Order(Base):
     def can_transition_to(
         self, new_status: OrderStatus, is_seller: bool = False, is_buyer: bool = False
     ) -> bool:
-        """Return True if the actor may move the order to *new_status*."""
         return new_status in self.allowed_transitions(is_seller=is_seller, is_buyer=is_buyer)
 
     def assert_transition(
         self, new_status: OrderStatus, is_seller: bool = False, is_buyer: bool = False
     ) -> None:
-        """Raise ValueError when the transition is not allowed for the actor."""
         if not self.can_transition_to(new_status, is_seller=is_seller, is_buyer=is_buyer):
             raise ValueError(
                 f"Cannot move order from '{self.status}' to '{new_status}' with your current role."
             )
 
     def apply_transition(self, new_status: OrderStatus, is_seller: bool = False, is_buyer: bool = False) -> None:
-        """Validate and apply a status transition."""
         self.assert_transition(new_status, is_seller=is_seller, is_buyer=is_buyer)
         self.status = new_status
 

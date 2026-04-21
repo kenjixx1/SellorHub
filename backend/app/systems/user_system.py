@@ -1,6 +1,3 @@
-"""
-UserSystem - application-layer orchestration for user accounts and addresses.
-"""
 from typing import Optional, List
 
 from fastapi import HTTPException, status
@@ -14,7 +11,6 @@ from app.schemas.user import UserUpdate
 
 
 class UserSystem:
-    """Orchestrates user profile, address-book, and account admin workflows."""
 
     def __init__(self, db: Session):
         self.db = db

@@ -1,6 +1,3 @@
-"""
-Cart models - persistent shopping cart for buyers.
-"""
 from decimal import Decimal
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
@@ -10,11 +7,6 @@ from app.database import Base
 
 
 class CartItem(Base):
-    """
-    Cart item entity.
-    Each buyer has at most one cart item row per product.
-    Owns subtotal calculation and merge/update rules.
-    """
     __tablename__ = 'cart_items'
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -31,18 +23,14 @@ class CartItem(Base):
         UniqueConstraint('user_id', 'product_id', name='uq_cart_user_product'),
     )
 
-    # ── Domain behaviour ──────────────────────────────────────────────────────
 
     def subtotal(self) -> Decimal:
-        """Return unit price * quantity for this cart line."""
         return Decimal(str(self.product.price)) * self.quantity
 
     def merge_quantity(self, additional: int) -> None:
-        """Increase quantity by *additional* units."""
         self.quantity += additional
 
     def set_quantity(self, new_quantity: int) -> None:
-        """Replace quantity; raises ValueError for non-positive values."""
         if new_quantity < 1:
             raise ValueError('Quantity must be at least 1')
         self.quantity = new_quantity

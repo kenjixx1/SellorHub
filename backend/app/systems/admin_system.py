@@ -1,7 +1,3 @@
-"""
-AdminSystem - application-layer orchestration for admin-facing workflows.
-Delegates domain-specific CRUD and moderation to stronger domain systems.
-"""
 from datetime import datetime
 from typing import Optional, List
 
@@ -18,7 +14,6 @@ from app.systems.user_system import UserSystem
 
 
 class AdminSystem:
-    """Coordinates admin workflows while delegating domain operations to other systems."""
 
     def __init__(self, db: Session):
         self.db = db

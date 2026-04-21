@@ -1,6 +1,3 @@
-"""
-Inquiry model - buyer questions about products.
-"""
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -10,17 +7,12 @@ from app.database import Base
 
 
 class InquiryStatus(str, enum.Enum):
-    """Inquiry lifecycle status."""
     NEW = 'new'
     REPLIED = 'replied'
     CLOSED = 'closed'
 
 
 class Inquiry(Base):
-    """
-    Inquiry entity.
-    Owns lifecycle-status transition helpers.
-    """
     __tablename__ = 'inquiries'
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -35,22 +27,17 @@ class Inquiry(Base):
     store = relationship('Store', back_populates='inquiries')
     product = relationship('Product', back_populates='inquiries')
 
-    # ── Domain behaviour ──────────────────────────────────────────────────────
 
     def belongs_to_store(self, store_id: int) -> bool:
-        """Return True when this inquiry is addressed to *store_id*."""
         return self.store_id == store_id
 
     def mark_replied(self) -> None:
-        """Transition the inquiry to REPLIED status."""
         self.status = InquiryStatus.REPLIED
 
     def close(self) -> None:
-        """Transition the inquiry to CLOSED status."""
         self.status = InquiryStatus.CLOSED
 
     def update_status(self, new_status: InquiryStatus) -> None:
-        """Apply a status update."""
         self.status = new_status
 
     def __repr__(self):
